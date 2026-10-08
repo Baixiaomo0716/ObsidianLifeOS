@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每天只做两件事，其余自动归位——LifeOS 首页设计篇</title>
+<style>
+:root{
+--bg:#ffffff;--bg2:#faf8f5;--ink:#1c1a17;--ink2:#54504a;--ink3:#8d877e;
+--red:#a32d2d;--red2:#c9544f;--redbg:#fcebeb;--line:#e9e4dc;--line2:#f2eee8;
+--serif:Georgia,"Times New Roman","Songti SC","Noto Serif SC","SimSun",serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+--mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.78;-webkit-font-smoothing:antialiased}
+.wrap{display:flex;gap:52px;max-width:1200px;margin:0 auto;padding:44px 32px 96px}
+.toc{width:232px;flex:none;position:sticky;top:36px;align-self:flex-start;max-height:calc(100vh - 72px);overflow-y:auto}
+.toc-title{font-size:11px;letter-spacing:.18em;color:var(--ink3);text-transform:uppercase;margin-bottom:14px}
+.toc a{display:block;padding:6px 0 6px 12px;font-size:13px;color:var(--ink2);text-decoration:none;border-left:2px solid transparent;transition:color .15s,border-color .15s}
+.toc a:hover{color:var(--red)}
+.toc a.on{color:var(--red);border-left-color:var(--red);font-weight:500}
+main{flex:1;min-width:0}
+.hero{border-bottom:2px solid var(--ink);padding-bottom:26px;margin-bottom:40px}
+.kicker{display:inline-block;font-size:11px;letter-spacing:.16em;color:var(--red);border:1px solid var(--redbg);background:var(--redbg);border-radius:3px;padding:3px 9px;margin-bottom:16px}
+h1{font-family:var(--serif);font-size:33px;line-height:1.32;font-weight:400;margin:0 0 14px;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--red);border-bottom:2px solid var(--redbg)}
+.hero p{margin:0;color:var(--ink2);font-size:14px}
+h2{font-family:var(--serif);font-size:22px;font-weight:400;margin:56px 0 18px;padding-left:16px;border-left:3px solid var(--red);line-height:1.42}
+h2 .n{font-family:var(--sans);font-size:12px;color:var(--red);display:block;letter-spacing:.14em;margin-bottom:3px}
+h3{font-family:var(--serif);font-size:17px;font-weight:400;margin:32px 0 12px;color:var(--ink)}
+p{margin:0 0 15px}
+ul,ol{margin:0 0 16px;padding-left:22px}
+li{margin-bottom:7px}
+strong{font-weight:600}
+code{font-family:var(--mono);font-size:13px;background:var(--bg2);border:1px solid var(--line);border-radius:3px;padding:1px 5px;color:var(--red)}
+pre{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--red);border-radius:4px;padding:16px 18px;overflow-x:auto;margin:0 0 18px}
+pre code{background:none;border:none;padding:0;color:var(--ink);font-size:12.5px;line-height:1.72;white-space:pre}
+table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:13.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--ink3);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--ink)}
+tbody tr:hover{background:var(--bg2)}
+td code{font-size:12px}
+.callout{background:var(--bg2);border-left:3px solid var(--red);border-radius:0 4px 4px 0;padding:15px 18px;margin:0 0 20px}
+.callout p:last-child{margin-bottom:0}
+.callout .lb{font-size:11px;letter-spacing:.14em;color:var(--red);display:block;margin-bottom:6px}
+.ico{width:15px;height:15px;stroke:var(--red);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;margin-right:7px;flex:none}
+.hd{display:flex;align-items:center}
+figure{margin:0 0 22px}
+figcaption{font-size:12px;color:var(--ink3);margin-top:9px;text-align:center}
+.fig{border:1px solid var(--line);border-radius:5px;background:var(--bg2);padding:18px}
+.bar{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:9px;font-size:12px;color:var(--ink3)}
+.bar b{color:var(--ink);font-weight:500}
+.bar .r{color:var(--red);font-weight:500}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:13px 15px}
+.card .t{font-size:12.5px;font-weight:500;margin-bottom:8px;display:block}
+.card .f{height:22px;border:1px solid var(--line);border-radius:3px;margin-bottom:7px;background:var(--bg)}
+.card .f.s{width:62%}
+.card .b{margin-top:9px;height:24px;border:1px solid var(--line);border-radius:3px;background:var(--bg2)}
+.g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:14px}
+.g4 div{border:1px solid var(--line);border-radius:4px;padding:10px 12px;font-size:12px;color:var(--ink2);background:var(--bg)}
+.rowz{border-top:1px solid var(--line);margin-top:14px}
+.rowz div{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line2);font-size:12.5px}
+.rowz .mut{color:var(--ink3)}
+.chip{display:inline-block;font-size:11px;color:var(--ink2);border:1px solid var(--line);border-radius:3px;padding:1px 7px;margin:0 5px 5px 0;background:var(--bg)}
+.pos{color:var(--red);font-weight:500}
+.mut{color:var(--ink3)}
+footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);font-size:12px;color:var(--ink3)}
+@media(max-width:900px){
+.wrap{flex-direction:column;gap:22px;padding:26px 18px 64px}
+.toc{position:static;width:auto;max-height:none;border:1px solid var(--line);border-radius:5px;padding:14px 16px;background:var(--bg2)}
+.toc a{display:inline-block;border-left:none;padding:4px 12px 4px 0}
+.toc a.on{background:none}
+h1{font-size:25px}
+h2{font-size:19px}
+table{font-size:12.5px}
+th,td{padding:7px 8px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="toc" aria-label="目录">
+<div class="toc-title">目录</div>
+<a href="#s1">1 · 目标与边界</a>
+<a href="#s2">2 · 首页结构总览</a>
+<a href="#s3">3 · 顶栏规格</a>
+<a href="#s4">4 · 今日速记区</a>
+<a href="#s5">5 · 领域入口与列表</a>
+<a href="#s6">6 · 最近动态</a>
+<a href="#s7">7 · 记账落盘规格</a>
+<a href="#s8">8 · 关联机制</a>
+<a href="#s9">9 · 附件存储</a>
+<a href="#s10">10 · 入口与启动行为</a>
+<a href="#s11">11 · 与 PRD 的衔接</a>
+<a href="#s12">12 · 待定与待实测</a>
+</nav>
+
+<main>
+
+<div class="hero">
+<span class="kicker">PRD 附录 A · v0.2 · 2026-09-28 · 已归档</span>
+<h1>每天只做两件事，其余自动归位<br><em>——LifeOS 首页与记账设计篇</em></h1>
+<p>本文定义 LifeOS 首页的界面结构、记账数据的落盘与取数方式，以及两者之间的关联机制。它是 PRD v0.2 的补充，定稿后将并入 PRD 正文。</p>
+</div>
+
+<div class="callout">
+<span class="lb">归档提示 · 2026-09-29</span>
+<p><strong>本文已并入 <code>PRD.md</code> v0.3（2026-09-29 合并定稿），仅作历史留档。</strong>后续修订一律以 PRD 正文为准，本文件不再单独维护。配套可视化见同目录的 <code>架构与原型图.html</code>。</p>
+</div>
+
+<h2 id="s1"><span class="n">第 1 章</span>目标与边界</h2>
+
+<p>这一篇要解决一个具体问题：<strong>用户每天打开这个系统，看到的第一个界面长什么样，填完的东西又落到哪去。</strong></p>
+
+<table>
+<thead><tr><th>范围</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>本篇覆盖</td><td>首页四段结构、顶栏、今日速记、领域入口与列表视图、最近动态、记账数组落盘、日记与记账的关联、附件存储、入口与启动行为</td></tr>
+<tr><td>本篇不覆盖</td><td>其他领域表单的字段定义（见 PRD 第 6 章 6.3–6.6）、游戏化数值体系（v3.0）、设置页细节、初始化向导</td></tr>
+</tbody>
+</table>
+
+<h3>承接的设计前提</h3>
+<p>以下四条来自 PRD 已定稿部分，本篇不再论证，直接沿用：</p>
+<ul>
+<li><strong>定位</strong>——全生活记录系统，时间轴 / 生活 / 知识 / 行动四个领域等重并列</li>
+<li><strong>落盘触发</strong>——有记录才建文件，不产生空白文件</li>
+<li><strong>数据规范</strong>——<code>type</code> / <code>category</code> / <code>status</code> / <code>created</code> / <code>updated</code> 沿用既有体系</li>
+<li><strong>格式即契约</strong>——DP-09：枚举与表格类字段格式一经写入即为契约，变更须走修订流程</li>
+</ul>
+
+<h2 id="s2"><span class="n">第 2 章</span>首页结构总览</h2>
+
+<p>首页由四段构成，从上到下按<strong>使用频次</strong>排列，而不是按领域排列——高频的在最上面，低频的收进入口。</p>
+
+<figure>
+<div class="fig">
+<div class="bar"><span><b>LifeOS</b></span><span>← <b>2026-09-28 周一</b> → &nbsp;·&nbsp; 当日支出 <span class="r">-186.50</span> &nbsp;·&nbsp; 连续记录 <span class="r">3</span> 天</span></div>
+<div style="margin-top:14px;font-size:12px;color:var(--ink3)">今日速记</div>
+<div class="grid2">
+<div class="card"><span class="t">日记</span><div class="f"></div><div class="f"></div><div class="f s"></div><div class="b"></div></div>
+<div class="card"><span class="t">记账</span><div class="f"></div><div class="f"></div><div class="f s"></div><div class="b"></div></div>
+</div>
+<div style="margin-top:18px;font-size:12px;color:var(--ink3)">领域入口</div>
+<div class="g4"><div>时间轴</div><div>生活</div><div>知识</div><div>行动</div></div>
+<div style="margin-top:18px;font-size:12px;color:var(--ink3)">最近动态 · 最近 10 条</div>
+<div class="rowz">
+<div><span>09-28 14:32 · 记账</span><span class="mut">餐饮 38.00 · 支付宝</span></div>
+<div><span>09-28 09:15 · 日记</span><span class="mut">今日存档已更新</span></div>
+<div><span>09-27 22:40 · 阅读</span><span class="mut">《书名》进度 45%</span></div>
+<div><span>09-27 20:11 · 任务</span><span class="mut">完成「整理字段规范」</span></div>
+<div><span>09-26 19:03 · 项目</span><span class="mut">LifeOS 插件 新建</span></div>
+</div>
+</div>
+<figcaption>首页四段结构示意（数值为占位）</figcaption>
+</figure>
+
+<table>
+<thead><tr><th>段</th><th>职责</th><th>关键规则</th></tr></thead>
+<tbody>
+<tr><td>1 · 顶栏</td><td>时间定位与当日概览</td><td>日期可切换，支持补记</td></tr>
+<tr><td>2 · 今日速记</td><td>每日高频录入</td><td><strong>可配置区块</strong>，各卡片独立保存</td></tr>
+<tr><td>3 · 领域入口</td><td>进入四领域</td><td>四卡等重，点击进入插件内列表视图</td></tr>
+<tr><td>4 · 最近动态</td><td>近期提交一览</td><td>跨表单最近 10 条，按更新时间倒序</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<span class="lb">贯穿全篇的一条总机制</span>
+<p><strong>首页按「表单是否已实现 + 用户是否勾选」渲染。</strong></p>
+<p>这条机制让首页只需设计一次，三个版本共用，不改一行代码：</p>
+</div>
+
+<table>
+<thead><tr><th>版本</th><th>已实现的表单</th><th>首页自动呈现为</th></tr></thead>
+<tbody>
+<tr><td>v1.0</td><td>日记</td><td>顶栏 + 日记卡 + 仅「时间轴」可用的领域入口 + 最近动态</td></tr>
+<tr><td>v1.5</td><td>+ 记账、任务</td><td>长出记账卡与待办清单；最近动态出现多条来源</td></tr>
+<tr><td>v2.0</td><td>+ 旅游 · 娱乐 · 知识库 · 项目</td><td>四领域入口全部可用，最近动态覆盖全部表单</td></tr>
+</tbody>
+</table>
+
+<h2 id="s3"><span class="n">第 3 章</span>顶栏规格</h2>
+
+<h3>三个指标</h3>
+<table>
+<thead><tr><th>元素</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>系统名</td><td>固定显示 <code>LifeOS</code>；点击回到今天</td></tr>
+<tr><td>日期切换</td><td><code>← 2026-09-28 周一 →</code>，左右箭头逐日切换</td></tr>
+<tr><td>当日支出</td><td>显示所查看日期的记账合计；支出带负号展示，收入不带</td></tr>
+<tr><td>连续记录</td><td><code>连续记录 N 天</code>，<strong>始终以今天为基准</strong>，不随日期切换变化</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<span class="lb">为什么顶栏只放三个</span>
+<p>顶栏是唯一"每次打开都会看到"的区域。指标一旦超过三个，人会停止阅读它——那时它就从信息退化成装饰。<strong>不加本月结余、不加待办数。</strong></p>
+</div>
+
+<h3>连续记录天数的计算规则</h3>
+<p><strong>日记或记账任一有记录，当天即算「已记录」。</strong></p>
+<p>理由：这个指标的作用是鼓励"每天来记点什么"，不是考核你写没写日记。门槛定太高，数字会很快断掉，然后它就失去意义了。</p>
+
+<h3>补记规则</h3>
+<table>
+<thead><tr><th>规则</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>可切换范围</td><td><strong>只能向前回看，不能选未来</strong></td></tr>
+<tr><td>不选未来的理由</td><td>记录的本质是"已经发生的事"，系统不需要未来的日记。允许选未来只会让人误把今天的账记到明天</td></tr>
+<tr><td>切换后的变化</td><td>顶栏「当日支出」→ 改显示该日合计；日记卡 → 回填该日已有内容；记账卡 → 显示并追加到该日</td></tr>
+<tr><td>不变化的部分</td><td>连续记录天数、领域入口、最近动态</td></tr>
+</tbody>
+</table>
+
+<h2 id="s4"><span class="n">第 4 章</span>今日速记区</h2>
+
+<h3>可配置区块</h3>
+<p>「今日速记」区放哪几张表单，由设置页勾选决定，<strong>默认勾选日记与记账</strong>。将来新增"运动打卡"或"睡眠记录"时，只要那张表单已经存在，勾一下它就出现在首页。</p>
+<p>这与 PRD 的 DP-01（零硬编码）与 DP-02（声明式表单）是同一条路子：<em>首页放什么，本身也是声明出来的，不是写死的。</em></p>
+
+<h3>日记卡</h3>
+<p>字段构成沿用 PRD 6.1，共 8 项：</p>
+<table>
+<thead><tr><th>字段</th><th>标签</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td><code>date</code></td><td>日期</td><td>date（默认所查看日期）</td></tr>
+<tr><td><code>mood</code></td><td>心情</td><td>select：开心 / 平静 / 焦虑 / 疲惫 / 难过 / 兴奋</td></tr>
+<tr><td><code>weather</code></td><td>天气</td><td>text</td></tr>
+<tr><td><code>events</code></td><td>今日事件</td><td>textarea → 正文 <code>## 今日事件</code></td></tr>
+<tr><td><code>gains</code></td><td>今日收获</td><td>textarea → 正文 <code>## 今日收获</code></td></tr>
+<tr><td><code>regrets</code></td><td>今日遗憾</td><td>textarea → 正文 <code>## 今日遗憾</code></td></tr>
+<tr><td><code>tomorrow</code></td><td>明日目标</td><td>textarea → 正文 <code>## 明日目标</code></td></tr>
+<tr><td><code>images</code></td><td>图片</td><td>attachment，1–3 张</td></tr>
+</tbody>
+</table>
+
+<h3>记账卡</h3>
+<p>一个可增删的<strong>多行明细</strong>列表，每行四个控件：金额、分类、账户、备注。底部有「+ 添加一笔」与「保存记账」两个动作。默认显示 1 行空明细，提交后清空复位。</p>
+
+<h3>为什么两张卡各自独立保存</h3>
+<div class="callout">
+<span class="lb">关键取舍</span>
+<p>日记与记账的<strong>触发时机不同</strong>：记账发生在消费当下（买完咖啡就想记一笔），日记发生在一天结束（写的时候要回顾一整天）。</p>
+<p>如果绑成一次提交，晚上写日记时发现白天漏了三笔账，只能在日记表单里补录——而那一刻你的注意力在"写"上，不在"记"上。<strong>把节奏不同的两件事绑成一个动作，长期一定会牺牲掉其中一个。</strong></p>
+</div>
+
+<h3>数据分发</h3>
+<p>两张卡虽然同处一页，但提交后落到<strong>完全不同的文件和结构</strong>里：</p>
+<pre><code>首页 · 今日速记
+   ├─ 日记卡 ──→ 00_时间轴/日记/2026/09-28.md
+   │              段落更新（section-update）
+   └─ 记账卡 ──→ 10_生活/11_记账/2026-09.md
+                  向 frontmatter 的 transactions 数组追加（append-item）</code></pre>
+
+<h2 id="s5"><span class="n">第 5 章</span>领域入口与列表视图</h2>
+
+<h3>入口形态</h3>
+<p>四张等重卡片：时间轴 / 生活 / 知识 / 行动。<strong>等宽等高，不给任何一方加视觉权重</strong>——这是"全生活记录系统"定位在界面上的直接体现。</p>
+<p>点击后在<strong>插件内的列表视图</strong>打开该领域记录，不跳转到 Obsidian 的文件树。理由：系统承诺的是"用户只管填表、结构自己长"，一点入口就把人甩进文件树，这个承诺就破了。</p>
+
+<h3>核心概念：条目（item）</h3>
+<div class="callout">
+<span class="lb">列表的"一行"不等于"一个文件"</span>
+<p>这是一个必须立起来的概念，因为记账改存数组之后，两种数据形态同时存在：</p>
+</div>
+
+<table>
+<thead><tr><th>列表</th><th>一行 =</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>日记</td><td>一个文件</td><td>一天一条</td></tr>
+<tr><td>旅游 / 娱乐 / 知识 / 项目</td><td>一个文件</td><td>一个实体一条</td></tr>
+<tr><td><strong>记账</strong></td><td><strong>一笔</strong></td><td>一个文件里可能躺着上百笔，需 FLATTEN 展开</td></tr>
+</tbody>
+</table>
+
+<p>因此回显层的数据模型是「条目（item）列表」，<strong>一个文件可以产出 N 个条目</strong>。PRD 4.1 中"以列表、看板、统计形式呈现"的表述需补上这一层次。</p>
+
+<h3>各领域列表列定义</h3>
+<p>列表是拿来扫读的，列要少、信息密度要高。建议列如下：</p>
+<table>
+<thead><tr><th>领域</th><th>条目</th><th>列</th></tr></thead>
+<tbody>
+<tr><td>时间轴</td><td>日记</td><td>日期 · 心情 · 天气 · 摘要</td></tr>
+<tr><td>生活</td><td>记账明细</td><td>日期 · 金额 · 分类 · 账户</td></tr>
+<tr><td>生活</td><td>旅游</td><td>行程 · 目的地 · 起止</td></tr>
+<tr><td>生活</td><td>娱乐</td><td>作品 · 类型 · 状态 · 评分</td></tr>
+<tr><td>知识</td><td>笔记</td><td>标题 · 类型 · 分类 · 更新</td></tr>
+<tr><td>行动</td><td>项目</td><td>项目 · 状态 · 进度 · 截止</td></tr>
+</tbody>
+</table>
+
+<h3>筛选与排序</h3>
+<p>各领域列表共用同一套筛选控件：</p>
+<p><span class="chip">时间范围</span><span class="chip">状态</span><span class="chip">分类</span><span class="chip">关键词搜索</span><span class="chip">多列排序</span></p>
+<p>默认按时间倒序排列。</p>
+
+<h3>新建入口</h3>
+<p>列表视图右上角设「新建」按钮；同时在命令面板为每张表单注册独立命令（如「新建旅游记录」）。两个入口并存——列表按钮给浏览场景，命令给键盘操作场景。</p>
+
+<h2 id="s6"><span class="n">第 6 章</span>最近动态</h2>
+
+<p>首页最下方是一条<strong>跨表单的动态流</strong>：只要通过插件表单<strong>创建或更新</strong>了一条记录，它就出现在这里。默认显示最近 <strong>10 条</strong>，按更新时间倒序。</p>
+
+<h3>与「近期」的区别：从日期轴换到事件轴</h3>
+<p>这一段原先叫「近期（连续 7 天）」。改名不是措辞调整，而是<strong>换了一根组织轴</strong>：</p>
+<table>
+<thead><tr><th>维度</th><th>近期（原设计）</th><th>最近动态（现设计）</th></tr></thead>
+<tbody>
+<tr><td>组织轴</td><td>日期轴——连续的日历日</td><td><strong>事件轴</strong>——提交过的记录</td></tr>
+<tr><td>跨表单</td><td>否，只读日记</td><td><strong>是</strong>，所有已实现表单</td></tr>
+<tr><td>空洞</td><td>无记录的日子淡显「未记录」</td><td>不出现（只列真实记录）</td></tr>
+<tr><td>回答的问题</td><td>我哪天漏记了</td><td><strong>我最近记了些什么</strong></td></tr>
+</tbody>
+</table>
+<p>换轴的理由：首页是概览层，它要回答的是"现在处于什么状态"。在只有日记一种数据源的阶段，"连续 7 天"是个好答案；但当记账、任务、阅读陆续接入，<strong>"最近发生了什么"比"哪几天空着"更贴近概览层的职责</strong>。</p>
+
+<h3>「一条动态」的粒度</h3>
+<p>一条动态 = <strong>一个条目（item）</strong>，与第 5 章定义的条目概念一致：</p>
+<table>
+<thead><tr><th>来源表单</th><th>一条动态是</th><th>示例</th></tr></thead>
+<tbody>
+<tr><td>日记</td><td>一天一条</td><td>09-28 09:15 · 日记 · 今日存档已更新</td></tr>
+<tr><td>记账</td><td><strong>一笔一条</strong>（非一个月文件一条）</td><td>09-28 14:32 · 记账 · 餐饮 38.00 · 支付宝</td></tr>
+<tr><td>任务</td><td>一条任务的新建 / 完成</td><td>09-27 20:11 · 任务 · 完成「整理字段规范」</td></tr>
+<tr><td>阅读 / 影视 / 游戏 / 演出</td><td>一个作品的新建或状态变更</td><td>09-27 22:40 · 阅读 · 《书名》进度 45%</td></tr>
+<tr><td>知识库 / 项目 / 旅游</td><td>一个实体的新建或更新</td><td>09-26 19:03 · 项目 · LifeOS 插件 新建</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<span class="lb">记账为什么按「笔」不按「文件」</span>
+<p>月度记账文件是<strong>容器</strong>，不是记录本身。若按文件粒度，一个月只会出现一条「2026-09 记账已更新」，看不出具体记了什么——而"最近记了什么"正是这条动态流存在的理由。</p>
+</div>
+
+<h3>排序与去重规则</h3>
+<table>
+<thead><tr><th>项</th><th>规则</th></tr></thead>
+<tbody>
+<tr><td>排序键</td><td><code>updated</code>（记录最后修改时间），倒序</td></tr>
+<tr><td>计入范围</td><td><strong>新建 + 更新都计入</strong>。改一笔账、补写今天的日记，都会顶到最前</td></tr>
+<tr><td>条数</td><td>默认 10 条，设置页可调</td></tr>
+<tr><td>同一对象重复出现</td><td>同一条记录被反复修改时<strong>只保留最新一次</strong>，不重复占位</td></tr>
+<tr><td>点击行为</td><td>点击条目进入沉淀层对应详情</td></tr>
+</tbody>
+</table>
+
+<h3>空态</h3>
+<p>尚无任何记录时显示一句引导文案（如「还没有记录，从上面的日记卡开始」），不显示空列表骨架。</p>
+
+<h3>DP-10 的去向</h3>
+<div class="callout">
+<span class="lb">一条原则的适用范围收窄，而非失效</span>
+<p><strong>DP-10（骨架在视图层，不在文件层）</strong>原由"近期 · 连续 7 天"确立。首页改为事件轴后，这条原则<strong>从首页撤出</strong>——但原则本身依然成立，它约束的是所有<strong>以日期为轴</strong>的视图（日历热力图、周视图、项目时间线）。</p>
+<p>换句话说：首页这次换成了事件轴，日期骨架就不再需要在这里体现；将来做日历视图时，DP-10 照旧适用。</p>
+</div>
+
+<h2 id="s7"><span class="n">第 7 章</span>记账落盘规格</h2>
+
+<h3>为什么不用 Markdown 表格</h3>
+<p>原设计是把每笔账追加成月度文件里的一行表格。问题在于：<strong>Dataview 与 Bases 只读 frontmatter，读不到正文里的表格。</strong>若沿用表格，"后期分别摘取记账数据做报表"这个需求会直接落空。</p>
+<p>因此改为：<strong>明细存在 frontmatter 的对象数组里</strong>，正文只放渲染块。</p>
+
+<h3>文件结构</h3>
+<pre><code>---
+title: 2026年9月记账
+type: finance
+period: 2026-09
+transactions:
+  - { date: 2026-09-28, amount: 38.00, category: 餐饮, account: 支付宝, note: 午饭 }
+  - { date: 2026-09-28, amount: 12.50, category: 交通, account: 微信 }
+  - { date: 2026-09-26, amount: 136.00, category: 购物, account: 银行卡 }
+created: 2026-09-01
+updated: 2026-09-28
+---
+
+# 2026年9月记账
+
+（正文为 Dataview 渲染块，实时呈现下方表格）</code></pre>
+
+<p>路径：<code>10_生活/11_记账/{YYYY-MM}.md</code>；合并方式：<code>append-item</code>（向数组追加一项，<code>mergeMode</code> 的新取值）。</p>
+<p><code>period</code> 字段不可省略——没有它，Dataview 只能靠文件名去匹配月份。</p>
+
+<h3>数组字段规范（格式即契约）</h3>
+<p>原 6.2.1「表格格式锁定」由本节取代。锁定的对象从"表格列"变为"数组键"。</p>
+<table>
+<thead><tr><th>项</th><th>锁定值</th></tr></thead>
+<tbody>
+<tr><td>字段名与顺序</td><td><code>date</code> → <code>amount</code> → <code>category</code> → <code>account</code> → <code>note</code>，固定不调换</td></tr>
+<tr><td><code>date</code></td><td>完整日期 <code>YYYY-MM-DD</code>（<strong>不是</strong>表格时代的 <code>MM-DD</code>）</td></tr>
+<tr><td><code>amount</code></td><td>纯数字，两位小数，<strong>恒为正数</strong>，不带货币符号、不带千分位</td></tr>
+<tr><td>收支方向</td><td>由 <code>category</code> 是否为「收入」判定，<strong>不由 amount 正负表示</strong></td></tr>
+<tr><td><code>category</code></td><td>严格取自枚举：餐饮 / 交通 / 购物 / 居住 / 医疗 / 娱乐 / 人情 / 收入 / 其他</td></tr>
+<tr><td><code>account</code></td><td>严格取自枚举：支付宝 / 微信 / 银行卡 / 信用卡 / 现金</td></tr>
+<tr><td>空值</td><td><strong>省略该键</strong>，不写 <code>null</code> / <code>-</code> / <code>N/A</code></td></tr>
+<tr><td>追加位置</td><td>数组末尾，不倒序插入</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<span class="lb">两处需在 PRD 中同步修订</span>
+<p><strong>其一，日期格式变了。</strong>表格时代是 <code>MM-DD</code>（因为文件名已含年月），数组里必须是完整 <code>YYYY-MM-DD</code>——否则 <code>WHERE t.date = this.date</code> 这类跨文件查询无法成立。</p>
+<p><strong>其二，金额恒为正数。</strong>原 PRD 6.2 的备注写作"正数，支出为正、收入为负"，表述自相矛盾，且没有定义收支方向的判定字段。现在统一由 <code>category</code> 判定，避免出现有人写 <code>-38</code>、有人写 <code>38</code> 的格式漂移。</p>
+</div>
+
+<h3>删掉的字段</h3>
+<p>原 6.2 中有 <code>account</code>（支付宝 / 微信 / 银行卡 / 现金）与 <code>payment_method</code>（现金 / 信用卡 / 移动支付）两个字段。两者语义高度重叠——都回答"这笔钱用什么付的"，并存会导致录入时被问两遍，且答案互相打架。</p>
+<p><strong>删除 <code>payment_method</code>，只保留 <code>account</code></strong>，取值扩展为：支付宝 / 微信 / 银行卡 / 信用卡 / 现金。这符合 DP-08 单一归属。</p>
+
+<h3>防重复提交</h3>
+<p>采用轻量方案：<strong>提交后立即清空表单 + 按钮短暂禁用</strong>，YAML 中不增加去重字段。</p>
+<p>代价说明：若出现"写入成功但界面无反应"的极端情况，用户重试仍会重复。此时靠 Dataview 渲染块能直观看到重复条目，手工删除即可。</p>
+
+<h3>正文的渲染块</h3>
+<p>月度文件正文放一个 Dataview 代码块，把数组渲染成表格，补偿人读体验：</p>
+<pre><code>```dataview
+TABLE WITHOUT ID t.date AS 日期, t.amount AS 金额, t.category AS 分类, t.account AS 账户
+FROM "10_生活/11_记账"
+FLATTEN transactions AS t
+WHERE period = "2026-09"
+SORT t.date DESC
+```</code></pre>
+<p>渲染而非存储，不违反 DP-08 单一归属——与日记的「今日汇总」块用的是同一手法。</p>
+
+<h2 id="s8"><span class="n">第 8 章</span>关联机制</h2>
+
+<p>日记底部放「今日汇总」块，自动列出当天的每一笔账：</p>
+
+<pre><code>```dataview
+TABLE WITHOUT ID t.amount AS 金额, t.category AS 分类, t.account AS 账户
+FROM "10_生活/11_记账"
+FLATTEN transactions AS t
+WHERE t.date = this.date
+```</code></pre>
+
+<p><code>this.date</code> 读的是日记自身的 <code>date</code> 字段。打开任何一天的日记，底部自动出现当天的消费明细——<strong>用户不需要做任何关联操作。</strong></p>
+
+<table>
+<thead><tr><th>项</th><th>规则</th></tr></thead>
+<tbody>
+<tr><td>关联方向</td><td><strong>单向</strong>：日记 → 记账</td></tr>
+<tr><td>为什么不双向</td><td>记账文件反过来链接日记会造成互相引用，既冗余又容易出循环</td></tr>
+<tr><td>段落性质</td><td>由插件创建一次，此后不参与表单写入；内容由查询实时生成，不落静态文本</td></tr>
+</tbody>
+</table>
+
+<h2 id="s9"><span class="n">第 9 章</span>附件存储</h2>
+
+<p>采用<strong>统一附件目录</strong>：</p>
+<pre><code>90_系统/附件/{YYYY}/{MM}/{date}-{序号}.{扩展名}
+例：90_系统/附件/2026/09/2026-09-28-1.jpg</code></pre>
+
+<table>
+<thead><tr><th>项</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>目录名可配置</td><td>默认 <code>90_系统/附件</code>，设置页可改（DP-01 零硬编码）</td></tr>
+<tr><td>为什么集中</td><td>便于清点与迁移；重建库时附件不散落各处</td></tr>
+<tr><td>已知代价</td><td>附件与记录分离，删除记录时附件会变成孤立文件——需要在删除时提示用户</td></tr>
+<tr><td>不采用全局设置的原因</td><td>Obsidian 的 <code>attachmentFolderPath</code> 是全局的，改动会影响库中所有其他笔记的附件落点</td></tr>
+</tbody>
+</table>
+
+<h2 id="s10"><span class="n">第 10 章</span>入口与启动行为</h2>
+
+<table>
+<thead><tr><th>项</th><th>规格</th></tr></thead>
+<tbody>
+<tr><td>视图位置</td><td><strong>主工作区标签页</strong>（四段结构信息量大，侧边栏会挤变形）</td></tr>
+<tr><td>打开方式</td><td>Ribbon 图标 + 命令面板命令，双入口</td></tr>
+<tr><td>视图单例</td><td>重复点击<strong>聚焦已有标签</strong>，不新开——否则一天下来会开出一堆首页标签</td></tr>
+<tr><td>附加命令</td><td><code>LifeOS: 快速记账</code> → 打开首页并聚焦记账卡第一行</td></tr>
+<tr><td>启动时自动打开</td><td><strong>提供可选开关，默认关闭</strong>。不劫持启动——你每天开 Obsidian 不一定是来记账的</td></tr>
+</tbody>
+</table>
+
+<h2 id="s11"><span class="n">第 11 章</span>与 PRD 的衔接</h2>
+
+<p>本篇定稿后需<strong>并入 PRD 正文</strong>，下列 19 项为合并清单。这一章的意义在于防止合并时漏项。</p>
+
+<table>
+<thead><tr><th>#</th><th>类别</th><th>内容</th><th>落点</th></tr></thead>
+<tbody>
+<tr><td>1</td><td rowspan="2">新增章节</td><td>首页 / 今日 界面规格</td><td>PRD 新章节</td></tr>
+<tr><td>2</td><td>插件内列表视图规格（含条目抽象）</td><td>PRD 新章节</td></tr>
+<tr><td>3</td><td rowspan="5">修订章节</td><td>回显层补「条目 item」层次</td><td>4.1</td></tr>
+<tr><td>4</td><td><code>mergeMode</code> 新增 <code>append-item</code>；<code>FieldDef</code> 新增「明细行」类型</td><td>4.3</td></tr>
+<tr><td>5</td><td>记账改 frontmatter 数组 + <code>period</code>；删除 <code>payment_method</code></td><td>6.2</td></tr>
+<tr><td>6</td><td>「表格格式锁定」改写为「数组字段规范」</td><td>6.2.1</td></tr>
+<tr><td>7</td><td>v1.0 首页按可用性渲染；明示首页一次设计三版本共用</td><td>第 9 章</td></tr>
+<tr><td>8</td><td rowspan="2">新增原则</td><td><strong>DP-10 骨架在视图层，不在文件层</strong></td><td>第 3 章</td></tr>
+<tr><td>9</td><td><strong>DP-11 插件只动自己写入的内容</strong></td><td>第 3 章</td></tr>
+<tr><td>10</td><td>附件</td><td>统一附件目录（原 TBD-03 闭环）</td><td>6.1 / 7.4</td></tr>
+<tr><td>11</td><td>关联</td><td>日记底部「今日汇总」块</td><td>5.4 / 6.1</td></tr>
+<tr><td>12</td><td rowspan="2">入口与行为</td><td>打开方式 / 视图单例 / 快速记账命令 / 启动开关</td><td>新增章节</td></tr>
+<tr><td>13</td><td>其他表单新建入口（列表按钮 + 独立命令）</td><td>新增章节</td></tr>
+<tr><td>14</td><td>游戏化</td><td><code>exp</code> 等字段只预留、v1–v2 不写入</td><td>7.1</td></tr>
+<tr><td>15</td><td>待办</td><td>属性面板嵌套数组支持（待实测）</td><td>12.3</td></tr>
+<tr><td>16</td><td rowspan="4">本轮修订</td><td>首页「近期」改为「最近动态」（事件轴 · 跨表单 · 默认 10 条）</td><td>首页章节（新增）</td></tr>
+<tr><td>17</td><td>DP-10 适用范围收窄为「以日期为轴的视图」，首页不再适用</td><td>第 3 章</td></tr>
+<tr><td>18</td><td>记录层入口重排：顶部固定日记 + 记账，其余 8 项平铺</td><td>顶层导航章节（新增）</td></tr>
+<tr><td>19</td><td>第 3 章「补记规则」中「明日目标」的表述随 B-08 一并修正（该字段已删除）</td><td>6.1</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<span class="lb">DP-11 的措辞</span>
+<p><strong>插件只动自己写入的内容。</strong>用户在 md 中手工添加的段落、手工修改的字段，插件一律不碰。</p>
+<p>这条不是技术约束，是价值约束——这个系统存在的意义是"数据属于你"。如果插件动不动就重写用户的文件，它和一个封闭的 App 就没有区别了。</p>
+</div>
+
+<h2 id="s12"><span class="n">第 12 章</span>待定与待实测</h2>
+
+<h3>待实测</h3>
+<table>
+<thead><tr><th>项</th><th>说明</th><th>影响</th></tr></thead>
+<tbody>
+<tr><td>属性面板对嵌套对象数组的支持</td><td>Obsidian 属性视图对"数组里装对象"的展示与编辑能力，需在 v1.0 实测确认。此项不凭印象下结论</td><td>决定月度文件在 Obsidian 中直开时的可读性；若支持差，读取应完全走插件回显层</td></tr>
+</tbody>
+</table>
+
+<h3>待定</h3>
+<table>
+<thead><tr><th>编号</th><th>内容</th><th>决策时点</th></tr></thead>
+<tbody>
+<tr><td>TBD-A</td><td>设置页的具体条目与分组</td><td>v2.0 设计阶段</td></tr>
+<tr><td>TBD-B</td><td>错误提示的文案规范（写入失败、同名冲突、必填缺失）</td><td>v1.0 设计阶段</td></tr>
+<tr><td>TBD-C</td><td>首次运行初始化向导的步骤与产出</td><td>v2.0 设计阶段</td></tr>
+<tr><td>TBD-D</td><td>游戏化数值体系（写入快照 vs 纯推导）</td><td>v3.0 启动前</td></tr>
+</tbody>
+</table>
+
+<footer>
+LifeOS 项目 · PRD 附录 A · 首页与记账设计篇 · v0.2 · 2026-09-28<br>
+v0.2 修订：首页第 2 / 6 章由「近期」改为「最近动态」（事件轴 · 跨表单 · 默认 10 条），并收窄 DP-10 适用范围。<br>
+本文为 PRD v0.2 的补充说明。定稿后按第 11 章清单并入 PRD 正文，并 bump 至 v0.3。
+</footer>
+
+</main>
+</div>
+
+<script>
+(function(){
+var links=[].slice.call(document.querySelectorAll('.toc a'));
+var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+function upd(){
+var y=window.scrollY+140,best=0;
+for(var i=0;i<secs.length;i++){if(secs[i]&&secs[i].offsetTop<=y)best=i;}
+links.forEach(function(a,i){a.classList.toggle('on',i===best);});
+}
+var t=false;
+window.addEventListener('scroll',function(){if(t)return;t=true;requestAnimationFrame(function(){upd();t=false;});},{passive:true});
+window.addEventListener('resize',upd);
+upd();
+})();
+</script>
+</body>
+</html>

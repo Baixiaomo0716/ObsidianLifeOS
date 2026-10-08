@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一张图看懂 LifeOS——架构与原型图</title>
+<style>
+:root{
+--bg:#ffffff;--bg2:#faf8f5;--bg3:#f4f1ec;--ink:#1c1a17;--ink2:#54504a;--ink3:#8d877e;
+--red:#a32d2d;--red2:#c9544f;--redbg:#fcebeb;--line:#e9e4dc;--line2:#f2eee8;
+--blue:#3d5a80;--bluebg:#eef2f7;
+--serif:Georgia,"Times New Roman","Songti SC","Noto Serif SC","SimSun",serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+--mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.78;-webkit-font-smoothing:antialiased}
+.wrap{display:flex;gap:52px;max-width:1220px;margin:0 auto;padding:44px 32px 96px}
+.toc{width:236px;flex:none;position:sticky;top:36px;align-self:flex-start;max-height:calc(100vh - 72px);overflow-y:auto}
+.toc-title{font-size:11px;letter-spacing:.18em;color:var(--ink3);text-transform:uppercase;margin-bottom:14px}
+.toc a{display:block;padding:6px 0 6px 12px;font-size:13px;color:var(--ink2);text-decoration:none;border-left:2px solid transparent;transition:color .15s,border-color .15s}
+.toc a:hover{color:var(--red)}
+.toc a.on{color:var(--red);border-left-color:var(--red);font-weight:500}
+main{flex:1;min-width:0}
+.hero{border-bottom:2px solid var(--ink);padding-bottom:26px;margin-bottom:40px}
+.kicker{display:inline-block;font-size:11px;letter-spacing:.16em;color:var(--red);border:1px solid var(--redbg);background:var(--redbg);border-radius:3px;padding:3px 9px;margin-bottom:16px}
+h1{font-family:var(--serif);font-size:33px;line-height:1.32;font-weight:400;margin:0 0 14px;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--red);border-bottom:2px solid var(--redbg)}
+.hero p{margin:0;color:var(--ink2);font-size:14px}
+h2{font-family:var(--serif);font-size:22px;font-weight:400;margin:58px 0 18px;padding-left:16px;border-left:3px solid var(--red);line-height:1.42}
+h2 .n{font-family:var(--sans);font-size:12px;color:var(--red);display:block;letter-spacing:.14em;margin-bottom:3px}
+h3{font-family:var(--serif);font-size:17px;font-weight:400;margin:32px 0 12px}
+p{margin:0 0 15px}
+ul,ol{margin:0 0 16px;padding-left:22px}
+li{margin-bottom:7px}
+strong{font-weight:600}
+code{font-family:var(--mono);font-size:13px;background:var(--bg2);border:1px solid var(--line);border-radius:3px;padding:1px 5px;color:var(--red)}
+pre{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--red);border-radius:4px;padding:16px 18px;overflow-x:auto;margin:0 0 18px}
+pre code{background:none;border:none;padding:0;color:var(--ink);font-size:12.5px;line-height:1.72;white-space:pre;display:block}
+table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:13.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--ink3);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--ink)}
+tbody tr:hover{background:var(--bg2)}
+.callout{background:var(--bg2);border-left:3px solid var(--red);border-radius:0 4px 4px 0;padding:15px 18px;margin:0 0 20px}
+.callout p:last-child{margin-bottom:0}
+.callout .lb{font-size:11px;letter-spacing:.14em;color:var(--red);display:block;margin-bottom:6px}
+.ico{width:15px;height:15px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;flex:none}
+figure{margin:0 0 22px}
+figcaption{font-size:12px;color:var(--ink3);margin-top:10px;text-align:center}
+.panel{border:1px solid var(--line);border-radius:6px;background:var(--bg2);padding:20px}
+/* ---- 架构图 ---- */
+.tier{position:relative}
+.tierbox{border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:14px 16px}
+.tierbox.hl{border:1.5px solid var(--red);background:#fffdfd}
+.tierlab{font-size:11px;letter-spacing:.1em;color:var(--ink3);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.tierlab .tag{color:var(--red);font-size:11px}
+.arrowdown{height:30px;display:flex;align-items:center;justify-content:center;position:relative}
+.arrowdown::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
+.arrowdown span{position:relative;background:var(--bg);color:var(--ink3);font-size:11px;padding:0 8px}
+.rowcards{display:grid;gap:10px}
+.r5{grid-template-columns:repeat(5,1fr)}
+.r4{grid-template-columns:repeat(4,1fr)}
+.r3{grid-template-columns:repeat(3,1fr)}
+.r2{grid-template-columns:repeat(2,1fr)}
+.mini{border:1px solid var(--line);border-radius:5px;background:var(--bg);padding:11px 13px;font-size:12.5px;line-height:1.55}
+.mini .b{display:block;font-weight:600;font-size:13px;margin-bottom:3px}
+.mini .s{display:block;color:var(--ink3);font-size:11.5px}
+.mini .d{display:block;color:var(--red);font-family:var(--mono);font-size:11px;margin-top:4px}
+.mini.acc{border-color:var(--red);background:var(--redbg)}
+.mini.wide{grid-column:span 2}
+/* ---- 原型线框 ---- */
+.fig{border:1px solid var(--line);border-radius:6px;background:var(--bg2);padding:18px}
+.fbar{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:5px;background:var(--bg);padding:9px 13px;font-size:12px;color:var(--ink3);margin-bottom:14px;gap:12px;flex-wrap:wrap}
+.fbar b{color:var(--ink);font-weight:500}
+.fbar .r{color:var(--red);font-weight:500}
+.flabel{font-size:11.5px;letter-spacing:.08em;color:var(--ink3);margin:16px 0 8px;display:flex;align-items:center;gap:7px}
+.flabel:first-child{margin-top:0}
+.fcard{border:1px solid var(--line);border-radius:5px;background:var(--bg);padding:12px 14px}
+.fcard .t{font-size:12.5px;font-weight:600;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.frow{height:20px;border:1px solid var(--line2);border-radius:3px;margin-bottom:6px;background:var(--bg2)}
+.frow.s{width:65%}
+.frow.half{width:42%}
+.fbtn{display:inline-block;margin-top:8px;height:22px;min-width:64px;border:1px solid var(--red);border-radius:3px;background:var(--redbg);font-size:10.5px;color:var(--red);line-height:20px;text-align:center;padding:0 10px}
+.fbtn.ghost{border-color:var(--line);background:var(--bg2);color:var(--ink3)}
+.fgrid{display:grid;gap:10px}
+.fitem{border:1px solid var(--line);border-radius:5px;background:var(--bg);padding:10px 12px;font-size:12.5px;display:flex;align-items:center;gap:8px}
+.fitem .dot{width:6px;height:6px;border-radius:50%;background:var(--red);flex:none}
+.fitem.off{color:var(--ink3);border-style:dashed}
+.fitem.off .dot{background:var(--line)}
+.fitem.top{border-color:var(--red2);background:var(--redbg)}
+.frowline{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2);font-size:12.5px}
+.frowline:last-child{border-bottom:none}
+.frowline .mut{color:var(--ink3)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{font-size:11px;color:var(--ink2);border:1px solid var(--line);border-radius:3px;padding:2px 9px;background:var(--bg)}
+.chip.on{border-color:var(--red);color:var(--red);background:var(--redbg)}
+/* ---- 沉淀页 tab ---- */
+.tabs{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs button{font:inherit;font-size:13px;background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px;cursor:pointer;color:var(--ink2)}
+.tabs button:hover{color:var(--red)}
+.tabs button.on{color:var(--red);border-bottom-color:var(--red);font-weight:500}
+.matrix td:first-child{font-weight:500}
+.badge{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:3px;border:1px solid var(--line);color:var(--ink3);background:var(--bg2);white-space:nowrap}
+.badge.f{border-color:var(--blue);color:var(--blue);background:var(--bluebg)}
+.badge.a{border-color:var(--red);color:var(--red);background:var(--redbg)}
+.badge.l{border-color:#7a6a3d;color:#7a6a3d;background:#f7f3e9}
+/* ---- 路线 ---- */
+.road{display:grid;gap:10px;grid-template-columns:repeat(5,1fr)}
+.road .v{border:1px solid var(--line);border-top:3px solid var(--line);border-radius:5px;background:var(--bg);padding:12px 13px;font-size:12.5px}
+.road .v.now{border-top-color:var(--red)}
+.road .v .h{font-weight:600;font-size:13px;margin-bottom:3px}
+.road .v .s{color:var(--ink3);font-size:11.5px;display:block;margin-bottom:8px}
+.road .v ul{padding-left:16px;margin:0}
+.road .v li{font-size:11.5px;margin-bottom:4px;color:var(--ink2)}
+footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);font-size:12px;color:var(--ink3)}
+.anchorlist{columns:2;column-gap:32px}
+.anchorlist li{break-inside:avoid}
+@media(max-width:1080px){
+.road{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:900px){
+.wrap{flex-direction:column;gap:22px;padding:26px 18px 64px}
+.toc{position:static;width:auto;max-height:none;border:1px solid var(--line);border-radius:5px;padding:14px 16px;background:var(--bg2)}
+.toc a{display:inline-block;border-left:none;padding:4px 12px 4px 0}
+.toc a.on{background:none}
+h1{font-size:25px}
+h2{font-size:19px}
+table{font-size:12.5px}
+th,td{padding:7px 8px}
+.r5,.r4,.r3,.r2{grid-template-columns:1fr 1fr}
+.anchorlist{columns:1}
+}
+@media(max-width:560px){
+.r5,.r4,.r3,.r2{grid-template-columns:1fr}
+.road{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="toc" aria-label="目录">
+<div class="toc-title">目录</div>
+<a href="#s0">0 · 怎么改这张图</a>
+<a href="#s1">1 · 整体架构</a>
+<a href="#s2">2 · 三视角</a>
+<a href="#s3">3 · 首页原型</a>
+<a href="#s4">4 · 记录层原型</a>
+<a href="#s5">5 · 沉淀层原型</a>
+<a href="#s6">6 · 映射矩阵</a>
+<a href="#s7">7 · 版本路线</a>
+<a href="#s8">8 · 数据落点</a>
+</nav>
+
+<main>
+
+<div class="hero">
+<span class="kicker">LifeOS · 配套可视化 · 随 PRD v0.4 同步</span>
+<h1>一张图看懂 LifeOS<br><em>——整体架构与三视角原型图</em></h1>
+<p>本文件是 <code>PRD.md</code> v0.4 的配套可视化。<strong>所有图形由页面内一份数据声明渲染而成</strong>——改数据即改图，不需要动样式与结构。数据区在文件末尾的 <code>&lt;script&gt;</code> 顶部，以 <code>★ 数据区</code> 标注。</p>
+</div>
+
+<h2 id="s0"><span class="n">第 0 章</span>怎么改这张图</h2>
+
+<p>这张图不是画出来的静态图片，而是**由一份数据渲染出来的**。所有中文文案、领域名、表格列、入口顺序、版本内容，都集中写在文件末尾的一个对象里。改那一段，图就跟着变。</p>
+
+<div class="callout">
+<span class="lb">修改入口</span>
+<p>用任意文本编辑器打开本文件，<strong>搜索 <code>★ 数据区</code></strong>——它后面紧跟一个名为 <code>LIFEOS</code> 的对象。所有内容都在里面，每段带中文注释。它下方的 <code>渲染区</code> 是画图逻辑，除非要改样式，否则不用碰。</p>
+</div>
+
+<h3>六个常见修改场景</h3>
+
+<table>
+<thead><tr><th>想做什么</th><th>改哪里</th><th>效果</th></tr></thead>
+<tbody>
+<tr><td>新增一个领域</td><td><code>domains</code> 数组加一项</td><td>架构图第 3 层、沉淀页 tab、映射矩阵同步多出一项</td></tr>
+<tr><td>改记录层入口顺序</td><td><code>record.top</code> 与 <code>record.rest</code></td><td>记录层原型与矩阵顺序同步变化</td></tr>
+<tr><td>给某个 tab 加一列</td><td>该 tab 的 <code>columns</code> 数组</td><td>沉淀页点开该 tab 即多一列</td></tr>
+<tr><td>新增一张表单</td><td><code>forms</code> 数组加一项</td><td>映射矩阵多一行；记入版本路线</td></tr>
+<tr><td>调整版本内容</td><td><code>roadmap</code> 数组</td><td>版本路线图同步更新</td></tr>
+<tr><td>只改文案</td><td>对应字段的中文值</td><td>直接生效，无需动结构</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<span class="lb">与 PRD 的关系</span>
+<p>这份文件是<strong>图</strong>，<code>PRD.md</code> 是<strong>事实</strong>。<strong>改动行为或验收标准时，先改 PRD，再来这里同步图。</strong>如果两者不一致，以 PRD 为准。</p>
+</div>
+
+<h2 id="s1"><span class="n">第 1 章</span>整体架构</h2>
+
+<p>自上而下是"你想记录什么"到"最后变成什么文件"；自下而上是"越往下越接近实现"。中间那层红框是本项目的全部技术含量所在——<strong>其余都是它的输入输出。</strong></p>
+
+<figure>
+<div class="panel" id="arch"></div>
+<figcaption>LifeOS 整体架构：内容体系 → 三视角 → 实现层</figcaption>
+</figure>
+
+<h2 id="s2"><span class="n">第 2 章</span>三视角</h2>
+
+<p>顶层导航由<strong>使用时机</strong>决定，不由内容类别决定。内容的领域数量会增长（今天五个，明年可能六个），而"写入 / 读取"这两个动作的数量是固定的——<strong>把会增长的东西放进内容，把不会变的东西放进导航。</strong></p>
+
+<figure>
+<div class="panel" id="views"></div>
+<figcaption>三视角：概览（当下）· 写入（今天）· 读取（过去）</figcaption>
+</figure>
+
+<div class="callout">
+<span class="lb">为什么原设计里的「财富」不做成第四个视角</span>
+<p>首页、记录、沉淀回答的是"<strong>什么时候用它</strong>"，而财富回答的是"<strong>它是什么</strong>"——三条在功能轴上，一条在内容轴上。混轴会带来两个后果：同一对象在多个入口重复出现；新增领域（如「健康」）无处安放。</p>
+<p>因此记账归入内容侧，成为<strong>沉淀层内部的第五个领域</strong>。</p>
+</div>
+
+<h2 id="s3"><span class="n">第 3 章</span>首页原型</h2>
+
+<p>五段结构，从上到下按<strong>使用频次</strong>排列，而非按领域排列——高频的在最上面，低频的收进入口。下方线框中的每一块都取自数据区，版本未实现的区块会自动隐藏（按可用性渲染）。</p>
+
+<figure>
+<div class="fig" id="home"></div>
+<figcaption>首页（概览层）线框示意——数值为占位</figcaption>
+</figure>
+
+<h2 id="s4"><span class="n">第 4 章</span>记录层原型</h2>
+
+<p>全部录入入口收进这一个视角，因此首页不需要并列摆放七个到十个入口。<strong>顶部固定两项，其余平铺。</strong></p>
+
+<figure>
+<div class="fig" id="record"></div>
+<figcaption>记录（写入层）线框示意</figcaption>
+</figure>
+
+<div class="callout">
+<span class="lb">顶部为什么只有两项</span>
+<p>判据是"<strong>是否每天都做</strong>"。日记与记账是每日动作；任务虽也高频，但属于"随时"而非"每日"，因此不进顶部。</p>
+<p>另外一件事：<strong>入口数量不必等于表单数量。</strong>阅读 / 影视 / 游戏 / 演出拆成四个入口，点进去弹出的字段完全相同，仅作品类型预填不同。</p>
+</div>
+
+<h2 id="s5"><span class="n">第 5 章</span>沉淀层原型</h2>
+
+<p>五个领域 tab，每个 tab 由一个筛选栏、一张数据表与一组行内操作构成。<strong>下方原型可以点击切换 tab</strong>——列会跟着当前领域变化。</p>
+
+<figure>
+<div class="fig" id="sink"></div>
+<figcaption>沉淀（回看层）线框示意——点击上方 tab 可切换领域</figcaption>
+</figure>
+
+<h3>核心概念：一行不等于一个文件</h3>
+
+<p>这是记账改存数组之后必然带出的概念，也是整个沉淀页的技术核心。回显层的数据模型是「<strong>条目（item）列表</strong>」——一个文件可以产出 N 个条目。</p>
+
+<figure>
+<div class="panel" id="itemshapes"></div>
+<figcaption>条目三形态及其增删改映射</figcaption>
+</figure>
+
+<h3>三条硬约束</h3>
+
+<table>
+<thead><tr><th>约束</th><th>内容</th><th>为什么</th></tr></thead>
+<tbody>
+<tr><td>正文不进表格</td><td>表格只装结构化字段，行点击后打开文件看正文</td><td>表格管"检索"，文件管"阅读"——混在一起两件事都被破坏</td></tr>
+<tr><td>删除走回收站</td><td>使用系统回收站，删除前二次确认</td><td>用户在文件里手工加过的内容，插件不能替他决定去留</td></tr>
+<tr><td>列由 Schema 派生</td><td>表格的列从字段声明生成，不手写</td><td>否则每加一个字段或领域都要改界面代码</td></tr>
+</tbody>
+</table>
+
+<h2 id="s6"><span class="n">第 6 章</span>映射矩阵</h2>
+
+<p>这一张表是整套设计的收敛结果：<strong>每张内容类型落在哪个领域、以什么形态存储、写进哪个文件、用什么方式合并。</strong>它也解释了为什么"七张表单能覆盖十个入口"。</p>
+
+<figure>
+<div class="panel" id="matrix"></div>
+<figcaption>内容类型 → 表单 → 领域 → 落盘规则</figcaption>
+</figure>
+
+<h2 id="s7"><span class="n">第 7 章</span>版本路线</h2>
+
+<p>排期原则是<strong>按使用频次，不按领域</strong>：每天要碰的先做，偶发的后做。界面一次设计好，各版本共用——未实现的区块按可用性自动隐藏。</p>
+
+<figure>
+<div class="panel" id="roadmap"></div>
+<figcaption>五个版本与各自的界面点亮范围</figcaption>
+</figure>
+
+<h2 id="s8"><span class="n">第 8 章</span>数据落点</h2>
+
+<figure>
+<div class="panel" id="dirs"></div>
+<figcaption>目录骨架（默认值，均可在设置页修改）</figcaption>
+</figure>
+
+<div class="callout">
+<span class="lb">两条编号约定</span>
+<p><strong>① <code>11_</code> 号空出，编号不回收。</strong>记账原位于 <code>10_生活/11_记账</code>，本版升为独立领域迁至 <code>40_记账</code>。空出的 <code>11_</code> 不分配给新的生活子类，避免既有双链与查询失效。</p>
+<p><strong>② 编号间隔预留。</strong>生活领域 <code>12</code>–<code>16</code> 已用，<code>17</code>–<code>19</code> 保留给未来的生活子类（如播客、漫画、课程）。</p>
+</div>
+
+<footer>
+LifeOS 项目 · 架构与原型图 · 随 <code>PRD.md</code> v0.4 同步 · 2026-09-29<br>
+本页由页内数据声明渲染生成。修订流程：<strong>先改 PRD，再同步此图</strong>；两者不一致时以 PRD 为准。
+</footer>
+
+</main>
+</div>
+
+<script>
+/* ============================================================
+   ★ 数据区 —— 改这里就能改图
+   ------------------------------------------------------------
+   下面这个 LIFEOS 对象是本页唯一的"内容源"。
+   所有中文文案、领域、列、入口、版本都在这里。
+   改完保存，刷新页面即可看到结果。
+   ============================================================ */
+const LIFEOS = {
+
+  /* ---------- 1. 顶层三视角（决定第 2 章与导航） ---------- */
+  views: [
+    { key:'home',   name:'首页', layer:'概览层', when:'当下',
+      duty:'聚合展示「现在处于什么状态」',
+      parts:['顶栏','待办清单','今日速记','领域入口','最近动态'],
+      icon:'home' },
+    { key:'record', name:'记录', layer:'写入层', when:'今天（可补记过去）',
+      duty:'提供全部录入入口，产生数据',
+      parts:['顶部固定：日记 · 记账','其余平铺：任务 / 项目 / 阅读 / 影视 / 游戏 / 知识 / 旅游 / 演出'],
+      icon:'plus' },
+    { key:'sink',   name:'沉淀', layer:'回看层', when:'过去',
+      duty:'浏览、检索、编辑、删除已有数据',
+      parts:['五领域 tab','筛选栏','数据表','行内编辑与删除'],
+      icon:'archive' }
+  ],
+
+  /* ---------- 2. 五大领域（决定第 1 章、第 5 章 tab、第 6 章） ---------- */
+  domains: [
+    { key:'timeline', name:'时间轴', dir:'00_时间轴/',      icon:'clock',
+      role:'时间锚点与复盘',     items:'日记 · 周记 · 月记' },
+    { key:'life',     name:'生活',   dir:'10_生活/',        icon:'sparkle',
+      role:'体验与消费',         items:'旅游 · 阅读 · 影视 · 游戏 · 演出' },
+    { key:'know',     name:'知识',   dir:'20_知识/',        icon:'book',
+      role:'沉淀与输出',         items:'笔记 · 摘录 · 方法论' },
+    { key:'action',   name:'行动',   dir:'30_行动/',        icon:'flag',
+      role:'推进与达成',         items:'项目 · 目标 · 任务' },
+    { key:'finance',  name:'记账',   dir:'40_记账/',        icon:'wallet',
+      role:'数值流水与财务',     items:'收支明细' }
+  ],
+
+  /* ---------- 3. 表单清单（决定第 4 章入口与第 6 章矩阵） ---------- */
+  /* shape：事件型 / 状态型；merge：合并方式；since：进入哪个版本 */
+  forms: [
+    { name:'日记', workType:'日记',           domain:'时间轴', shape:'事件型', grain:'一天一文件',
+      pattern:'{YYYY-MM-DD}', path:'00_时间轴/日记/',           merge:'段落更新', since:'v1.0' },
+    { name:'记账', workType:'记账',           domain:'记账',   shape:'事件型', grain:'一月一文件',
+      pattern:'{YYYY-MM}',    path:'40_记账/',                  merge:'数组追加', since:'v1.5' },
+    { name:'旅游', workType:'旅游',           domain:'生活',   shape:'事件型', grain:'一次出行一文件',
+      pattern:'{start_date} {title}', path:'10_生活/12_旅游/',  merge:'段落更新', since:'v2.0' },
+    { name:'娱乐', workType:'书',             domain:'生活',   shape:'状态型', grain:'一作品一文件',
+      pattern:'{title}',      path:'10_生活/13_阅读/',           merge:'段落更新', since:'v2.0' },
+    { name:'娱乐', workType:'影视',           domain:'生活',   shape:'状态型', grain:'一作品一文件',
+      pattern:'{title}',      path:'10_生活/14_影视/',           merge:'段落更新', since:'v2.0' },
+    { name:'娱乐', workType:'游戏',           domain:'生活',   shape:'状态型', grain:'一作品一文件',
+      pattern:'{title}',      path:'10_生活/15_游戏/',           merge:'段落更新', since:'v2.0' },
+    { name:'娱乐', workType:'演出',           domain:'生活',   shape:'状态型', grain:'一作品一文件',
+      pattern:'{title}',      path:'10_生活/16_演出/',           merge:'段落更新', since:'v2.0' },
+    { name:'知识库', workType:'笔记 / 摘录',   domain:'知识',   shape:'状态型', grain:'一篇一文件',
+      pattern:'{title}',      path:'20_知识/{21_笔记 或 22_摘录}/', merge:'段落更新', since:'v2.0' },
+    { name:'项目', workType:'项目',           domain:'行动',   shape:'状态型', grain:'一个一文件',
+      pattern:'{name}',       path:'30_行动/31_项目/',           merge:'段落更新', since:'v2.0' },
+    { name:'任务', workType:'任务',           domain:'行动',   shape:'事件型', grain:'一周一文件',
+      pattern:'{YYYY}-W{WW}', path:'30_行动/33_任务/',           merge:'行勾选',   since:'v1.5' }
+  ],
+
+  /* ---------- 4. 记录层入口（决定第 4 章线框顺序） ---------- */
+  record: {
+    top:  ['日记','记账'],
+    rest: ['任务','项目','阅读','影视','游戏','知识','旅游','演出']
+  },
+
+  /* ---------- 5. 首页五段（决定第 3 章线框） ---------- */
+  home: {
+    bar: { brand:'LifeOS', date:'2026-09-28 周一', weather:'22.3°C 阴',
+           spend:'-186.50', streak:'3' },
+    todos: [
+      { text:'完成首页原型', due:'09-30', project:'LifeOS 插件', late:false },
+      { text:'整理字段规范', due:'10-01', project:'',            late:true, lateDays:2 }
+    ],
+    cards: [
+      { name:'日记', hint:'心情 · 天气 · 今日事件 · 今日收获 · 今日遗憾' },
+      { name:'记账', hint:'多行明细：金额 · 分类 · 账户 · 备注' }
+    ],
+    feed: [
+      { t:'09-28 14:32', src:'记账', text:'餐饮 38.00 · 支付宝' },
+      { t:'09-28 09:15', src:'日记', text:'今日存档已更新' },
+      { t:'09-27 22:40', src:'阅读', text:'《书名》进度 45%' },
+      { t:'09-27 20:11', src:'任务', text:'完成「整理字段规范」' },
+      { t:'09-26 19:03', src:'项目', text:'LifeOS 插件 新建' }
+    ]
+  },
+
+  /* ---------- 6. 沉淀层五个 tab 的列与筛选项（决定第 5 章） ---------- */
+  sink: [
+    { key:'timeline', name:'时间轴', source:'日记', shape:'文件级',
+      columns:['日期','星期','心情','天气','摘要','标签'],
+      filters:['月份','心情','天气','标签'] },
+    { key:'life', name:'生活', source:'旅游 · 阅读 · 影视 · 游戏 · 演出', shape:'文件级 · 列随类型变',
+      columns:['行程 / 书名 / 片名','类型','状态','评分','起止'],
+      filters:['类型','状态','评分','标签'],
+      byType: {
+        '旅游':['行程','目的地','起止','花费'],
+        '阅读':['书名','作者','进度','评分','状态'],
+        '影视':['片名','导演','集数','评分','状态'],
+        '游戏':['游戏名','平台','时长','通关状态'],
+        '演出':['剧目','艺人','场馆','场次','评分']
+      } },
+    { key:'know', name:'知识', source:'笔记 · 摘录', shape:'文件级',
+      columns:['标题','类型','分类','标签','更新'],
+      filters:['类型','分类','标签','时间'] },
+    { key:'action', name:'行动', source:'项目 · 任务', shape:'文件级 + 行级 · 列随类型变',
+      columns:['名称','类型','状态','进度 / 截止','所属项目'],
+      filters:['类型','状态','所属项目'],
+      byType: {
+        '项目':['项目','状态','进度','截止'],
+        '任务':['任务','所属项目','计划日期','状态']
+      } },
+    { key:'finance', name:'记账', source:'一笔账', shape:'数组级',
+      columns:['日期','金额','分类','账户','备注'],
+      filters:['月份','分类','账户','收支','金额区间'] }
+  ],
+
+  /* ---------- 7. 条目三形态（决定第 5 章说明图） ---------- */
+  itemShapes: [
+    { shape:'文件级', src:'日记 · 旅游 · 娱乐 · 知识库 · 项目', one:'一个文件',
+      edit:'结构化字段内联改；正文点开编辑面板', del:'删除整个文件' },
+    { shape:'数组级', src:'记账', one:'一笔（一个文件含多笔）',
+      edit:'行内改单元格，整体写回数组', del:'从数组移除该笔' },
+    { shape:'行级',   src:'任务', one:'正文中的一行',
+      edit:'行内打勾；文本点开编辑', del:'移除该行' }
+  ],
+
+  /* ---------- 8. 目录骨架（决定第 8 章） ---------- */
+  dirTree: [
+    { p:'LifeOS/',            d:'数据根目录',                    depth:0 },
+    { p:'00_时间轴/',          d:'日记 · 周记 · 月记',             depth:1 },
+    { p:'10_生活/',            d:'体验与消费',                    depth:1 },
+    { p:'├ 12_旅游/',         d:'事件型 · 一次出行一文件',         depth:2 },
+    { p:'├ 13_阅读/',         d:'状态型 · 一作品一文件',           depth:2 },
+    { p:'├ 14_影视/',         d:'状态型 · 一作品一文件',           depth:2 },
+    { p:'├ 15_游戏/',         d:'状态型 · 一作品一文件',           depth:2 },
+    { p:'└ 16_演出/',         d:'状态型 · 一作品一文件',           depth:2 },
+    { p:'20_知识/',            d:'沉淀与输出 · 21_笔记 / 22_摘录',  depth:1 },
+    { p:'30_行动/',            d:'推进与达成',                    depth:1 },
+    { p:'├ 31_项目/',         d:'状态型 · 一个一文件',             depth:2 },
+    { p:'├ 32_目标/',         d:'首期预留',                       depth:2 },
+    { p:'└ 33_任务/',         d:'事件型 · 一周一文件',             depth:2 },
+    { p:'40_记账/',            d:'数值流水 · 一月一文件',           depth:1 },
+    { p:'90_系统/',            d:'模板 · 视图 · 附件 · 归档',       depth:1 },
+    { p:'   └ 附件/{YYYY}/{MM}/', d:'统一附件目录',                depth:2 },
+    { p:'字段规范.md',         d:'首次运行向导自动生成',            depth:1 }
+  ],
+
+  /* ---------- 9. 版本路线（决定第 7 章） ---------- */
+  roadmap: [
+    { v:'v1.0', theme:'核心闭环', now:true,
+      items:['三视角框架与首页骨架','日记表单（5 个内容字段）','落盘引擎与幂等合并','顶栏（含天气）· 最近动态'] },
+    { v:'v1.5', theme:'每日两件事',
+      items:['记账：录入 + 数据表','任务：周文件 + 打勾 + 首页待办','沉淀层五 tab 框架'] },
+    { v:'v2.0', theme:'产出与配置',
+      items:['旅游 · 娱乐 · 知识库 · 项目','设置页与首次运行向导','编辑与删除完善'] },
+    { v:'v3.0', theme:'游戏化',
+      items:['角色面板：等级 / 经验 / 属性','成就徽章与称号'] },
+    { v:'v4.0', theme:'洞察与报表',
+      items:['账本面板（总额 / 占比 / 趋势）','日历热力图与统计报表'] }
+  ]
+};
+
+/* ============================================================
+   渲染区 —— 一般不用改
+   ============================================================ */
+
+/* 图标集（内联 SVG，线性风格） */
+const ICONS = {
+  home:'<path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+  plus:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/>',
+  archive:'<rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  sparkle:'<path d="M12 3l2.2 5.6L20 10.8l-5.8 2.2L12 19l-2.2-6L4 10.8l5.8-2.2z"/>',
+  book:'<path d="M4 4h6a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5H20z"/>',
+  flag:'<path d="M6 21V4"/><path d="M6 5h11l-2 4 2 4H6"/>',
+  wallet:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.2"/>',
+  layers:'<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  tag:'<path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.3"/>',
+  db:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'
+};
+function svg(name, size){
+  size = size || 15;
+  const p = ICONS[name] || ICONS.grid;
+  return '<svg class="ico" viewBox="0 0 24 24" width="'+size+'" height="'+size+'" aria-hidden="true">'+p+'</svg>';
+}
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- 第 1 章：整体架构 ---------- */
+function renderArch(){
+  const d = LIFEOS.domains.map(x =>
+    '<div class="mini"><span class="b">'+svg(x.icon)+esc(x.name)+'</span>'+
+    '<span class="s">'+esc(x.role)+'</span><span class="d">'+esc(x.dir)+'</span></div>').join('');
+
+  const v = LIFEOS.views.map(x =>
+    '<div class="mini'+(x.key==='sink'?' acc':'')+'"><span class="b">'+svg(x.icon)+esc(x.name)+'</span>'+
+    '<span class="s">'+esc(x.layer)+' · '+esc(x.when)+'</span>'+
+    '<span class="s">'+esc(x.duty)+'</span></div>').join('');
+
+  const forms = '<div class="mini wide"><span class="b">表单层</span><span class="s">'+
+    LIFEOS.forms.map(f=>f.name).filter((n,i,a)=>a.indexOf(n)===i).join(' · ')+'</span></div>';
+
+  const impl = [
+    { b:'Schema 注册中心', s:'字段定义 · 变体扩展 · 校验规则 · 落盘规则' },
+    { b:'落盘引擎', s:'建目录 · 建文件 · 幂等合并更新' },
+    { b:'Vault 中的 Markdown 文件', s:'标准 md + YAML frontmatter，可被 Dataview / Bases 读取' },
+    { b:'回显层（沉淀）', s:'条目列表 · 详情 · 编辑 · 删除' }
+  ].map(x => '<div class="mini"><span class="b">'+esc(x.b)+'</span><span class="s">'+esc(x.s)+'</span></div>').join('');
+
+  document.getElementById('arch').innerHTML =
+    '<div class="tierbox"><div class="tierlab">'+svg('layers',13)+' 内容体系层 <span class="tag">你想记录什么</span></div>'+
+      '<div class="rowcards r5">'+d+'</div></div>'+
+    '<div class="arrowdown"><span>领域是横切维度，不是顶层导航</span></div>'+
+    '<div class="tierbox"><div class="tierlab">'+svg('grid',13)+' 三视角层 <span class="tag">什么时候用它</span></div>'+
+      '<div class="rowcards r3">'+v+'</div></div>'+
+    '<div class="arrowdown"><span>所有录入都经由表单</span></div>'+
+    '<div class="tierbox hl"><div class="tierlab">'+svg('db',13)+' 实现层 <span class="tag">本项目的全部技术含量</span></div>'+
+      '<div class="rowcards r2">'+forms+'<div class="mini"><span class="b">落盘路径</span><span class="s">00_时间轴 / 10_生活 / 20_知识 / 30_行动 / 40_记账</span></div>'+impl+'</div>'+
+    '</div>';
+}
+
+/* ---------- 第 2 章：三视角 ---------- */
+function renderViews(){
+  const cards = LIFEOS.views.map(v =>
+    '<div class="mini"><span class="b" style="font-size:15px">'+svg(v.icon)+esc(v.name)+'</span>'+
+    '<span class="s" style="font-size:12px">'+esc(v.layer)+'　时间指向：'+esc(v.when)+'</span>'+
+    '<span class="s" style="margin-top:6px;font-size:12.5px;color:var(--ink2)">'+esc(v.duty)+'</span>'+
+    '<span class="d" style="color:var(--ink3);margin-top:8px;line-height:1.7">'+v.parts.map(esc).join('　·　')+'</span></div>').join('');
+  document.getElementById('views').innerHTML =
+    '<div class="rowcards r3">'+cards+'</div>'+
+    '<div class="callout" style="margin:18px 0 0"><span class="lb">三者的分工边界</span>'+
+    '<p>同一个对象<strong>不在多个视角重复承担同一职能</strong>。记账出现在"记录"（快速记一笔）、"沉淀"（明细表）里，但两处做的是不同的事：一处写入，一处读取。顶层视角只回答"我什么时候用它"，不回答"它是什么"。</p></div>';
+}
+
+/* ---------- 第 3 章：首页原型 ---------- */
+function renderHome(){
+  const b = LIFEOS.home.bar;
+  const bar = '<div class="fbar"><span><b>'+esc(b.brand)+'</b></span>'+
+    '<span>← <b>'+esc(b.date)+'</b> →</span>'+
+    '<span>'+esc(b.weather)+'</span>'+
+    '<span>当日支出 <span class="r">'+esc(b.spend)+'</span></span>'+
+    '<span>连续记录 <span class="r">'+esc(b.streak)+'</span> 天</span></div>';
+
+  const todo = LIFEOS.home.todos.map(t =>
+    '<div class="frowline"><span>'+svg('plus',13)+' '+esc(t.text)+(t.late?' <span class="mut">（延期 '+t.lateDays+' 天）</span>':'')+'</span>'+
+    '<span class="mut">'+esc(t.due)+(t.project?' · '+esc(t.project):'')+'</span></div>').join('');
+
+  const cards = LIFEOS.home.cards.map(c =>
+    '<div class="fcard"><span class="t">'+svg('plus',13)+esc(c.name)+'</span>'+
+    '<div class="frow"></div><div class="frow"></div><div class="frow s"></div>'+
+    '<span class="fbtn">保存'+esc(c.name)+'</span>'+
+    '<div class="frow" style="margin-top:10px;height:auto;border:none;background:none"><span class="mut" style="font-size:11.5px">'+esc(c.hint)+'</span></div></div>').join('');
+
+  const gates = LIFEOS.domains.map(d =>
+    '<div class="fitem"><span class="dot"></span>'+svg(d.icon,13)+esc(d.name)+'</div>').join('');
+
+  const feed = LIFEOS.home.feed.map(f =>
+    '<div class="frowline"><span>'+esc(f.t)+' · '+esc(f.src)+'</span><span class="mut">'+esc(f.text)+'</span></div>').join('');
+
+  document.getElementById('home').innerHTML =
+    bar+
+    '<div class="flabel">'+svg('flag',13)+' 待办清单 —— 行内勾选即完成</div>'+
+    '<div class="fcard">'+todo+'</div>'+
+    '<div class="flabel">'+svg('plus',13)+' 今日速记 —— 可配置区块，各卡片独立保存</div>'+
+    '<div class="fgrid r2">'+cards+'</div>'+
+    '<div class="flabel">'+svg('grid',13)+' 领域入口 —— 五卡等重，点击进入沉淀层</div>'+
+    '<div class="fgrid r5">'+gates+'</div>'+
+    '<div class="flabel">'+svg('clock',13)+' 最近动态 —— 跨表单最近 10 条，按更新时间倒序</div>'+
+    '<div class="fcard">'+feed+'</div>'+
+    '<div style="font-size:11.5px;color:var(--ink3);margin-top:10px;line-height:1.7">版本未实现的区块（如 v1.0 阶段的待办清单与记账卡）按「按可用性渲染」机制自动隐藏，不出现死链接。</div>';
+}
+
+/* ---------- 第 4 章：记录层原型 ---------- */
+function renderRecord(){
+  const top = LIFEOS.record.top.map(n =>
+    '<div class="fitem top"><span class="dot"></span>'+svg('plus',13)+esc(n)+'</div>').join('');
+  const rest = LIFEOS.record.rest.map(n =>
+    '<div class="fitem off"><span class="dot"></span>'+svg('grid',13)+esc(n)+'</div>').join('');
+  document.getElementById('record').innerHTML =
+    '<div class="flabel">'+svg('flag',13)+' 顶部固定 —— 判据：是否每天都做</div>'+
+    '<div class="fgrid r2">'+top+'</div>'+
+    '<div class="flabel">'+svg('grid',13)+' 其余平铺 —— 顺序可在设置页拖动调整</div>'+
+    '<div class="fgrid r4">'+rest+'</div>'+
+    '<div style="font-size:11.5px;color:var(--ink3);margin-top:12px;line-height:1.7">'+
+    '入口数量会随领域增长，因此排列顺序做成可配置项（零硬编码）。阅读 / 影视 / 游戏 / 演出 拆为四个入口，共用同一张表单，仅作品类型预填不同。</div>';
+}
+
+/* ---------- 第 5 章：沉淀层原型（可交互） ---------- */
+let sinkActive = 'timeline';
+function renderSink(){
+  const tabs = LIFEOS.sink.map(t =>
+    '<button type="button" data-t="'+t.key+'" class="'+(t.key===sinkActive?'on':'')+'">'+esc(t.name)+'</button>').join('');
+  const cur = LIFEOS.sink.filter(t => t.key === sinkActive)[0] || LIFEOS.sink[0];
+
+  /* 列随类型变：若该 tab 有 byType，展示类型切换后的列 */
+  let colHtml = '', cols = cur.columns;
+  if (cur.byType){
+    const keys = Object.keys(cur.byType);
+    colHtml = '<div class="flabel">'+svg('tag',13)+' 列随类型变 —— 选中的类型决定列，不取并集</div>'+
+      '<div class="chips">'+keys.map((k,i)=>'<span class="chip'+(i===0?' on':'')+'">'+esc(k)+'</span>').join('')+'</div>'+
+      '<table><tr>'+cur.byType[keys[0]].map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr>'+
+      '<tr>'+cur.byType[keys[0]].map(()=>'<td style="color:var(--ink3)">—</td>').join('')+'</tr></table>';
+    cols = cur.columns;
+  }
+
+  const head = cols.map(c=>'<th>'+esc(c)+'</th>').join('');
+  const empty = cols.map(()=>'<td style="color:var(--ink3)">—</td>').join('');
+
+  document.getElementById('sink').innerHTML =
+    '<div class="tabs">'+tabs+'</div>'+
+    '<div class="flabel">'+svg('grid',13)+' 筛选栏 —— 各领域共用同一套控件</div>'+
+    '<div class="chips">'+cur.filters.map(f=>'<span class="chip">'+esc(f)+'</span>').join('')+
+      '<span class="chip">关键词</span><span class="chip">排序</span>'+
+      '<span class="chip" style="margin-left:auto;border-color:var(--red);color:var(--red);background:var(--redbg)">+ 新建</span></div>'+
+    '<div class="flabel">'+svg('db',13)+' 数据表 —— 列由 Schema 派生（DP-14）</div>'+
+    '<table><tr>'+head+'</tr><tr>'+empty+'</tr><tr>'+empty+'</tr></table>'+
+    '<div style="font-size:11.5px;color:var(--ink3);line-height:1.75">'+
+      '条目来源：<strong>'+esc(cur.source)+'</strong>　形态：<strong>'+esc(cur.shape)+'</strong><br>'+
+      '表格只装结构化字段（frontmatter）；正文点开文件阅读。删除走系统回收站并二次确认。</div>'+
+    colHtml;
+}
+
+/* ---------- 第 5 章附：条目三形态 ---------- */
+function renderItemShapes(){
+  const rows = LIFEOS.itemShapes.map(s =>
+    '<tr><td><span class="badge '+(s.shape==='文件级'?'f':s.shape==='数组级'?'a':'l')+'">'+esc(s.shape)+'</span></td>'+
+    '<td>'+esc(s.src)+'</td><td>'+esc(s.one)+'</td><td>'+esc(s.edit)+'</td><td>'+esc(s.del)+'</td></tr>').join('');
+  document.getElementById('itemshapes').innerHTML =
+    '<table><thead><tr><th>形态</th><th>来源</th><th>一行 =</th><th>怎么改</th><th>怎么删</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody></table>'+
+    '<div class="callout" style="margin:0"><span class="lb">由此推出的一条原则</span>'+
+    '<p>回显层的数据模型是「<strong>条目（item）列表</strong>」，不是「文件列表」——<strong>一个文件可以产出 N 个条目</strong>。月度记账文件产出上百条明细，每个周任务文件产出若干条任务行。</p></div>';
+}
+
+/* ---------- 第 6 章：映射矩阵 ---------- */
+function renderMatrix(){
+  const rows = LIFEOS.forms.map(f =>
+    '<tr><td>'+esc(f.workType)+'</td><td>'+esc(f.name)+'</td><td>'+esc(f.domain)+'</td>'+
+    '<td><span class="badge">'+esc(f.shape)+'</span></td><td>'+esc(f.grain)+'</td>'+
+    '<td><code>'+esc(f.path + f.pattern + '.md')+'</code></td><td>'+esc(f.merge)+'</td>'+
+    '<td style="white-space:nowrap">'+esc(f.since)+'</td></tr>').join('');
+  const names = LIFEOS.forms.map(f=>f.name).filter((n,i,a)=>a.indexOf(n)===i);
+  document.getElementById('matrix').innerHTML =
+    '<table class="matrix"><thead><tr><th>内容类型</th><th>表单</th><th>领域</th><th>形态</th>'+
+    '<th>落盘粒度</th><th>落盘目标（路径 + 文件名）</th><th>合并方式</th><th>首版</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div style="font-size:12px;color:var(--ink3);line-height:1.8">'+
+    '<strong>'+names.length+' 张表单</strong>覆盖 <strong>'+LIFEOS.forms.length+'</strong> 类内容。'+
+    '其中娱乐一张表覆盖四类——靠作品类型字段切换扩展字段与目标目录。<br>'+
+    '<strong>规律</strong>：事件型按时间聚合（天 / 周 / 月），状态型按对象分文件。</div>';
+}
+
+/* ---------- 第 7 章：版本路线 ---------- */
+function renderRoadmap(){
+  const cards = LIFEOS.roadmap.map(r =>
+    '<div class="v'+(r.now?' now':'')+'"><div class="h">'+esc(r.v)+'　<span style="font-weight:400;color:var(--ink2)">'+esc(r.theme)+'</span></div>'+
+    '<span class="s">'+(r.now?'当前基线':'规划中')+'</span><ul>'+
+    r.items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul></div>').join('');
+  document.getElementById('roadmap').innerHTML =
+    '<div class="road">'+cards+'</div>'+
+    '<div class="callout" style="margin:18px 0 0"><span class="lb">界面按可用性渲染</span>'+
+    '<p>首页与记录层一次设计好，五个版本共用，不随版本改结构——未实现的区块自动隐藏。v1.0 只见日记卡与时间轴入口；v1.5 长出记账卡与待办清单；v2.0 五领域入口全部点亮。</p></div>';
+}
+
+/* ---------- 第 8 章：目录骨架 ---------- */
+function renderDirs(){
+  const rows = LIFEOS.dirTree.map(x =>
+    '<div class="frowline" style="padding-left:'+(x.depth*18)+'px">'+
+    '<span style="font-family:var(--mono);font-size:12px;color:var(--'+(x.depth===0?'red':x.depth===1?'ink':'ink2')+')">'+esc(x.p)+'</span>'+
+    '<span class="mut" style="font-size:11.5px">'+esc(x.d)+'</span></div>').join('');
+  document.getElementById('dirs').innerHTML = rows;
+}
+
+/* ---------- 启动 ---------- */
+renderArch();
+renderViews();
+renderHome();
+renderRecord();
+renderSink();
+renderItemShapes();
+renderMatrix();
+renderRoadmap();
+renderDirs();
+
+/* 沉淀页 tab 交互 */
+document.getElementById('sink').addEventListener('click', function(e){
+  const b = e.target.closest('button[data-t]');
+  if (!b) return;
+  sinkActive = b.getAttribute('data-t');
+  renderSink();
+});
+
+/* 目录滚动高亮 */
+(function(){
+  var links = [].slice.call(document.querySelectorAll('.toc a'));
+  var secs = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function upd(){
+    var y = window.scrollY + 140, best = 0;
+    for (var i=0;i<secs.length;i++){ if (secs[i] && secs[i].offsetTop <= y) best = i; }
+    links.forEach(function(a,i){ a.classList.toggle('on', i === best); });
+  }
+  var t = false;
+  window.addEventListener('scroll', function(){
+    if (t) return; t = true;
+    requestAnimationFrame(function(){ upd(); t = false; });
+  }, {passive:true});
+  window.addEventListener('resize', upd);
+  upd();
+})();
+</script>
+</body>
+</html>
