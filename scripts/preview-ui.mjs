@@ -1,0 +1,9 @@
+import { readFile, mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import * as esbuild from "esbuild";
+import { mobileDependencyGuard } from "./build-policy.mjs";
+const result = await esbuild.build({ stdin: { contents: 'import {createElement} from "react"; import {createRoot} from "react-dom/client"; import {App} from "./src/ui/App"; createRoot(document.getElementById("preview")).render(createElement(App));', resolveDir: process.cwd(), loader: "ts" }, bundle: true, platform: "browser", format: "iife", write: false, define: { "process.env.NODE_ENV": '"production"' }, plugins: [mobileDependencyGuard()], logLevel: "silent" });
+const css = await readFile("styles.css", "utf8"), output = path.resolve("tests/local-vault/DEV-013-preview");
+await mkdir(output, { recursive: true });
+const html = `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LifeOS 页面框架预览</title><style>:root{--text-normal:#28312b;--text-muted:#6e7971;--text-faint:#7d897f;--background-primary:#f8faf6;--background-secondary:#f0f4ec;--background-modifier-border:#dce3d9;--interactive-accent:#4c7860}*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Microsoft YaHei",sans-serif}#preview{height:100dvh;width:100%}button,select{font:inherit;border:1px solid #dce3d9;border-radius:8px;padding:8px;background:#fff;color:#28312b;cursor:pointer}button:disabled{cursor:default;opacity:.5}button:hover:not(:disabled){background:#e4ebdf}${css}</style></head><body><div id="preview" class="lifeos-root"></div><script>${result.outputFiles[0].text.replace(/<\/script/gi, "<\\/script")}</script></body></html>`;
+const target = path.join(output, "index.html"); await writeFile(target, html, "utf8"); console.log(target);

@@ -1,0 +1,8 @@
+# Example for a dedicated Vault repository, not the source repository
+/.obsidian/
+/.trash/
+/.cache/
+/local-backups/
+Thumbs.db
+.DS_Store
+*.tmp

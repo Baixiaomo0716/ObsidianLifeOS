@@ -1,0 +1,2 @@
+# Native Git candidate rule; verify mobile-client support before use
+*.json merge=binary

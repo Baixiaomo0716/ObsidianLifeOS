@@ -1,0 +1,4 @@
+# Single package workspace. Only esbuild's binary setup may execute on install.
+allowBuilds:
+  esbuild: true
+storeDir: ./pnpm-store

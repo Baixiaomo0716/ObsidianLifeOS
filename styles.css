@@ -1,0 +1,96 @@
+.lifeos-view-content { padding: 0; overflow: hidden; }
+.lifeos-root { height: 100%; min-height: 0; min-width: 0; container-type: inline-size; }
+.lifeos-root *, .lifeos-root *::before, .lifeos-root *::after { box-sizing: border-box; }
+.lifeos-root .lifeos-app {
+  display: flex; height: 100%; min-height: 0; min-width: 0; overflow: hidden;
+  color: var(--text-normal); background: var(--background-primary);
+}
+.lifeos-root .lifeos-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 20px; border-bottom: 1px solid var(--background-modifier-border); flex-shrink: 0;
+}
+.lifeos-root .lifeos-header h1 { margin: 0; font-size: 24px; }
+.lifeos-root .lifeos-eyebrow { margin: 0 0 6px; font-size: 12px; color: var(--text-muted); }
+.lifeos-root .lifeos-stage {
+  font-size: 12px; white-space: nowrap; padding: 4px 8px;
+  color: var(--text-muted); background: var(--background-secondary); border-radius: 6px;
+}
+.lifeos-root .lifeos-sidebar { width: 172px; flex-shrink: 0; display: flex; flex-direction: column; gap: 28px; padding: 24px 12px; border-right: 1px solid var(--background-modifier-border); background: var(--background-secondary); }
+.lifeos-root .lifeos-brand { display: grid; grid-template-columns: 32px 1fr; align-items: center; padding: 0 8px; }
+.lifeos-root .lifeos-brand > span { font-size: 30px; color: var(--interactive-accent); }
+.lifeos-root .lifeos-brand small { grid-column: 1 / -1; margin-top: 10px; color: var(--text-muted); font-size: 11px; }
+.lifeos-root .lifeos-navigation { display: flex; flex-direction: column; gap: 8px; }
+.lifeos-root .lifeos-navigation button { display: flex; align-items: center; gap: 12px; justify-content: flex-start; min-height: 44px; width: 100%; box-shadow: none; border: 1px solid transparent; background: transparent; color: var(--text-muted); }
+.lifeos-root .lifeos-navigation button[aria-current="page"] { color: var(--text-normal); background: var(--background-primary); border-color: var(--background-modifier-border); }
+.lifeos-root button:focus-visible, .lifeos-root select:focus-visible, .lifeos-root [tabindex]:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: -2px; }
+.lifeos-root .lifeos-sidebar-note { margin-top: auto; font-size: 11px; text-align: center; color: var(--text-faint); }
+.lifeos-root .lifeos-workspace { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+.lifeos-root .lifeos-page { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: 20px; }
+.lifeos-root .lifeos-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; min-width: 0; }
+.lifeos-root .lifeos-card {
+  border: 1px solid var(--background-modifier-border); border-radius: 10px;
+  background: var(--background-secondary); display: flex; flex-direction: column;
+  height: 260px; min-width: 0; min-height: 0; overflow: hidden; overflow-wrap: anywhere;
+}
+.lifeos-root .lifeos-card-header { flex-shrink: 0; padding: 16px; border-bottom: 1px solid var(--background-modifier-border); }
+.lifeos-root .lifeos-card-header h2 { margin: 0; font-size: 16px; }
+.lifeos-root .lifeos-card-header span { font-size: 11px; color: var(--text-muted); }
+.lifeos-root .lifeos-card-body { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; overflow-x: hidden; padding: 16px; }
+.lifeos-root .lifeos-card-footer { flex-shrink: 0; padding: 12px 16px; border-top: 1px solid var(--background-modifier-border); background: var(--background-secondary); }
+.lifeos-root .lifeos-card p { margin: 0; line-height: 1.7; }
+.lifeos-root .lifeos-empty { padding: 12px 0; }
+.lifeos-root .lifeos-empty strong { display: block; margin-bottom: 12px; font-size: 14px; font-weight: 500; }
+.lifeos-root .lifeos-empty p { color: var(--text-muted); font-size: 13px; }
+.lifeos-root .lifeos-shortcuts { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.lifeos-root .lifeos-shortcuts button { display: flex; flex-direction: column; gap: 4px; height: auto; min-height: 60px; flex: 1; min-width: 64px; }
+.lifeos-root .lifeos-shortcuts small { font-size: 10px; }
+.lifeos-root .lifeos-module-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.lifeos-root .lifeos-module-row:first-child { padding-top: 0; }
+.lifeos-root .lifeos-module-row p { font-size: 12px; color: var(--text-muted); }
+.lifeos-root .lifeos-status { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.lifeos-root .lifeos-record-grid .lifeos-card { height: 440px; }
+.lifeos-root .lifeos-review-layout { display: flex; flex-direction: column; gap: 16px; min-height: 0; flex: 1; }
+.lifeos-root .lifeos-review-layout .lifeos-card { flex: 1; min-height: 240px; }
+.lifeos-root .lifeos-filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; flex-shrink: 0; font-size: 13px; }
+.lifeos-root .lifeos-filter-bar span { color: var(--text-muted); }
+.lifeos-root .lifeos-settings-card { height: 100%; min-height: 220px; }
+.lifeos-root .lifeos-settings .setting-item { flex-wrap: wrap; gap: 10px; }
+.lifeos-root .lifeos-settings .setting-item-info { min-width: 120px; }
+.lifeos-root .lifeos-settings .setting-item-control { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+.lifeos-root .lifeos-settings input { max-width: 100%; }
+.lifeos-root .lifeos-card-footer .setting-item { border: 0; padding: 0; }
+.lifeos-root .lifeos-workspace-footer { flex-shrink: 0; padding: 8px 20px; color: var(--text-faint); font-size: 11px; border-top: 1px solid var(--background-modifier-border); }
+.lifeos-root .lifeos-hint, .lifeos-settings .lifeos-settings-hint { color: var(--text-muted); font-size: 13px; }
+@container (max-width: 680px) {
+  .lifeos-root .lifeos-app { flex-direction: column-reverse; }
+  .lifeos-root .lifeos-sidebar { width: auto; padding: 6px 8px max(6px, env(safe-area-inset-bottom)); border-right: 0; border-top: 1px solid var(--background-modifier-border); gap: 0; }
+  .lifeos-root .lifeos-brand, .lifeos-root .lifeos-sidebar-note { display: none; }
+  .lifeos-root .lifeos-navigation { flex-direction: row; gap: 4px; }
+  .lifeos-root .lifeos-navigation button { flex: 1; min-width: 0; width: auto; justify-content: center; flex-direction: column; gap: 2px; min-height: 48px; padding: 4px; font-size: 11px; }
+  .lifeos-root .lifeos-header { padding: 14px; }
+  .lifeos-root .lifeos-page { padding: 12px; }
+  .lifeos-root .lifeos-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .lifeos-root .lifeos-workspace-footer { padding: 6px 12px; font-size: 10px; }
+  .lifeos-root .lifeos-settings input { width: 100%; min-width: 0; }
+}
+.lifeos-integrity-list {
+  max-height: 60vh;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.lifeos-template-input { display: block; width: 100%; margin: 12px 0; }
+.lifeos-template-actions { display: flex; gap: 12px; justify-content: flex-end; }
+.lifeos-query-fields { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+.lifeos-query-fields label { display:flex; flex-direction:column; gap:6px; min-width:130px; flex:1; }
+.lifeos-query-fields input,.lifeos-query-fields select { width:100%; }
+.lifeos-card-body article button { white-space:normal; text-align:left; height:auto; }
+.lifeos-relation-results { max-height:240px; overflow:auto; border:1px solid var(--background-modifier-border); border-radius:8px; padding:10px; margin:12px 0; }
+.lifeos-relation-choice { display:flex; gap:10px; align-items:center; padding:8px 0; overflow-wrap:anywhere; }
+.lifeos-relation-picker .lifeos-module-row { gap:12px; }
+.lifeos-attachment-import-list { max-height:50vh; overflow:auto; margin:16px 0; }
+.lifeos-attachment-import-row { padding:12px 0; border-bottom:1px solid var(--background-modifier-border); overflow-wrap:anywhere; }
+.lifeos-journal-calendar { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin:16px 0; text-align:center; }
+.lifeos-journal-calendar button { display:flex; flex-direction:column; align-items:center; height:auto; min-height:48px; padding:6px 2px; }
+.lifeos-journal-calendar button[aria-pressed=true] { outline:2px solid var(--interactive-accent); }
+.lifeos-journal-calendar small { font-size:10px; }
+.lifeos-journal-body { white-space:pre-wrap; overflow-wrap:anywhere; max-height:260px; overflow:auto; font-family:inherit; }

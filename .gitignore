@@ -1,0 +1,15 @@
+# Local synthetic Vaults, device settings and recovery copies
+/tests/local-vault/
+/tests/local-backups/
+/dev-vault/
+/.obsidian/
+
+# Generated plugin artifacts and dependencies
+/node_modules/
+/dist/
+/main.js
+*.tsbuildinfo
+/pnpm-store/
+
+# Local assistant memory
+/.workbuddy/

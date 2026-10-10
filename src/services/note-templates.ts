@@ -1,0 +1,13 @@
+import riji from "../../templates/日记.md";
+import yuedu from "../../templates/阅读.md";
+import yingshi from "../../templates/影视.md";
+import youxi from "../../templates/游戏.md";
+import yanchu from "../../templates/演出.md";
+import lvxing from "../../templates/旅行.md";
+import zhishi from "../../templates/知识.md";
+import daiban from "../../templates/待办.md";
+import xiangmu from "../../templates/项目.md";
+import type { Shiti } from "../domain/entities";
+export type NoteType = Exclude<Shiti, "jizhang">;
+export const noteLabels: Record<NoteType, string> = { riji: "日记", yuedu: "阅读", yingshi: "影视", youxi: "游戏", yanchu: "演出", lvxing: "旅行", zhishi: "知识", daiban: "待办", xiangmu: "项目" };
+export const bundledTemplates: Record<NoteType, string> = { riji, yuedu, yingshi, youxi, yanchu, lvxing, zhishi, daiban, xiangmu };

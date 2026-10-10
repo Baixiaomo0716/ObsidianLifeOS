@@ -1,0 +1,52 @@
+{
+  "name": "life-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LifeOS Obsidian plugin: engineering foundation",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "node esbuild.config.mjs --watch",
+    "dev:vault": "node esbuild.config.mjs --watch --vault",
+    "install:vault": "pnpm build && node esbuild.config.mjs --vault",
+    "typecheck": "tsc --noEmit",
+    "build": "pnpm typecheck && node esbuild.config.mjs",
+    "verify": "node scripts/verify-build.mjs",
+    "test:lifecycle": "node --test scripts/lifecycle.test.mjs",
+    "test:domain": "node --test scripts/domain.test.mjs",
+    "test:storage": "node --test scripts/storage.test.mjs scripts/obsidian-file-system.test.mjs scripts/storage-roundtrip.test.mjs",
+    "test:operations": "node --test scripts/operations.test.mjs",
+    "test:journal": "node --test scripts/journal.test.mjs scripts/journal-ui.test.mjs",
+    "test:attachments": "node --test scripts/attachments.test.mjs scripts/binary-file-system.test.mjs scripts/attachment-import-modal.test.mjs",
+    "test:relations": "node --test scripts/relation-service.test.mjs scripts/relation-picker.test.mjs",
+    "test:index": "node --test scripts/entity-index.test.mjs scripts/search-service.test.mjs",
+    "test:settings": "node --test scripts/settings.test.mjs",
+    "preview:ui": "node scripts/preview-ui.mjs",
+    "test:ui": "node --test scripts/ui.test.mjs",
+    "test:templates": "node --test scripts/templates.test.mjs",
+    "test:chinese-fields": "node --test scripts/chinese-fields.test.mjs",
+    "test:unified-templates": "node --test scripts/unified-templates.test.mjs",
+    "migrate:chinese": "node scripts/migrate-chinese-fields.mjs --vault",
+    "check": "pnpm build && pnpm verify && pnpm test:lifecycle && pnpm test:domain && pnpm test:storage && pnpm test:operations && pnpm test:index && pnpm test:relations && pnpm test:attachments && pnpm test:journal && pnpm test:settings && pnpm test:ui && pnpm test:templates && pnpm test:chinese-fields && pnpm test:unified-templates"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "esbuild": "0.28.2",
+    "obsidian": "1.13.1",
+    "typescript": "7.0.2"
+  }
+}
+
+
+
+
