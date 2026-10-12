@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { createHash } from "node:crypto";
 import * as esbuild from "esbuild";
 import { mobileDependencyGuard } from "./build-policy.mjs";
-const b = await esbuild.build({ stdin: { contents: 'export * from "./src/storage/attachment-store"; export * from "./src/services/attachment-reference-service"; export * from "./src/services/index"; export * from "./src/storage/index"; export * from "./src/domain/index";', resolveDir: process.cwd() }, bundle: true, format: "esm", platform: "browser", write: false, plugins: [mobileDependencyGuard()] });
+const b = await esbuild.build({ stdin: { contents: 'export * from "./src/services/project-file-service"; export * from "./src/storage/attachment-store"; export * from "./src/services/attachment-reference-service"; export * from "./src/services/index"; export * from "./src/storage/index"; export * from "./src/domain/index";', resolveDir: process.cwd() }, bundle: true, format: "esm", platform: "browser", write: false, plugins: [mobileDependencyGuard()] });
 const x = await import(`data:text/javascript;base64,${Buffer.from(b.outputFiles[0].text).toString("base64")}`);
 const id = (n) => `${String(n).padStart(8, "0")}-abcd-4abc-8abc-123456789abc`, now = "2026-10-10T00:00:00Z";
 const buffer = (values = [1, 2, 3]) => Uint8Array.from(values).buffer;
@@ -103,4 +103,29 @@ test("uncertain reference completion retries original journal even if attachment
 test("retired plugin rejects preparation and execution without writes", async () => {
   const f = fixture(), draft = await f.store.prepare(file(), id(1)); f.stop();
   await assert.rejects(f.store.execute(draft)); await assert.rejects(f.store.prepare(file(), id(1))); assert.equal(f.files.size, 0); assert.equal(f.bytes.size, 0);
+});
+
+test("project file list verifies bytes and keeps broken references visible without writes", async () => {
+  const f = fixture(), source = await f.project(), draft = await f.store.prepare(file(), id(1)), info = await f.store.execute(draft);
+  await f.references.execute(await f.references.prepare(source, [info.路径]));
+  const service = new x.ProjectFileService(f.index, f.store, f.references, () => true), current = await f.notes.read(source.path), before = new Map(f.files);
+  const rows = await service.list(current); assert.equal(rows[0].info.名称, "文档.pdf"); assert.equal(await service.open(current, info.路径), info.路径);
+  f.bytes.set(info.路径, buffer([9])); const broken = await service.list(current); assert.equal(broken.length, 1); assert.ok(broken[0].error); assert.equal(broken[0].info, undefined);
+  await assert.rejects(service.open(current, info.路径)); assert.deepEqual(f.files, before);
+  f.bytes.set(info.路径, buffer()); assert.ok((await service.list(current))[0].info);
+});
+test("project file removal permits missing bytes, preserves metadata and shared project reference", async () => {
+  const f = fixture(), a = await f.project(), b = await f.project(2), imported = await f.store.execute(await f.store.prepare(file(), id(1)));
+  await f.references.execute(await f.references.prepare(a, [imported.路径])); await f.references.execute(await f.references.prepare(b, [imported.路径]));
+  const service = new x.ProjectFileService(f.index, f.store, f.references, () => true); assert.equal(await service.open(await f.notes.read(b.path), imported.路径), imported.路径);
+  f.bytes.delete(imported.路径); const current = await f.notes.read(a.path), draft = await service.prepareRemove(current, imported.路径);
+  await service.executeRemove(draft); await service.executeRemove(draft);
+  assert.deepEqual((await f.notes.read(a.path)).attributes.shangchuanwenjian, []); assert.deepEqual((await f.notes.read(b.path)).attributes.shangchuanwenjian, [imported.路径]); assert.ok(f.files.has(f.metadata(imported)));
+  await assert.rejects(service.open(await f.notes.read(a.path), imported.路径));
+});
+test("project file actions reject stale source, unreferenced paths and stopped service", async () => {
+  const f = fixture(), a = await f.project(), service = new x.ProjectFileService(f.index, f.store, f.references, () => true);
+  await assert.rejects(service.open(a, "../foreign.pdf")); await assert.rejects(service.prepareRemove(a, "other.pdf"));
+  await f.fs.process(a.path, raw => raw + "manual edit"); await assert.rejects(service.list(a), /变化/); await assert.rejects(service.prepareRemove(a, "other.pdf"), /变化/);
+  const stopped = new x.ProjectFileService(f.index, f.store, f.references, () => false); await assert.rejects(stopped.list(await f.notes.read(a.path)), /停止/);
 });

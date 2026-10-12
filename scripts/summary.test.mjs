@@ -1,0 +1,86 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { createHash } from "node:crypto";
+import * as esbuild from "esbuild";
+const b = await esbuild.build({ stdin: { contents: 'export * from "./src/services/summary-service"; export * from "./src/services/task-list-service"; export * from "./src/services/task-service"; export * from "./src/services/journal-relation-service"; export * from "./src/services/journal-context-service"; export * from "./src/services/template-service"; export * from "./src/services/search-service"; export * from "./src/services/relation-service"; export * from "./src/services/index"; export * from "./src/storage/index"; export * from "./src/domain/index";', resolveDir: process.cwd() }, bundle: true, format: "esm", platform: "browser", loader: { ".md": "text" }, write: false });
+const x = await import(`data:text/javascript;base64,${Buffer.from(b.outputFiles[0].text).toString("base64")}`);
+const id = (n) => `${String(n).padStart(8, "0")}-abcd-4abc-8abc-123456789abc`;
+const initial = "2026-10-09T00:00:00Z", now = "2026-10-10T00:00:00Z";
+async function fixture(type = "riji", refs = []) {
+  const files = new Map(), fs = { list: async () => [...files.keys()], read: async (p) => { if (!files.has(p)) throw new x.StoreError("not_found", "missing", p); return files.get(p); }, create: async (p, text) => { if (files.has(p)) throw new x.StoreError("already_exists", "exists", p); files.set(p, text); }, process: async (p, fn) => { const result = fn(await fs.read(p)); files.set(p, result); return result; } };
+  const layout = new x.StorageLayout(), clock = { now: () => now }, notes = new x.NoteStore(fs, layout, clock), ledger = new x.LedgerStore(fs, layout, clock);
+  let seq = 100, active = true;
+  const ids = { next: () => id(seq++) }, operations = new x.OperationService(fs, layout, notes, ledger, clock, ids, { get: async () => id(99) }, { of: async (text) => createHash("sha256").update(text).digest("hex") });
+  const index = new x.EntityIndex(fs, layout), service = new x.RelationService(index, operations, ids, () => active);
+  const record = (n, type, extra = {}) => x.deriveDateFields(x.normalizeInput({ biaoshi: id(n), shiti: type, jiegoubanben: 2, chuangjianshijian: initial, gengxinshijian: initial, mingcheng: `记录${n}`, biaoqian: [], ...(type === "riji" ? { riqi: "2026-10-09", guanlian: [] } : type === "daiban" ? { guanlian: [] } : type === "xiangmu" ? { daiban: [], shangchuanwenjian: [] } : type === "jizhang" ? { riqi: "2026-10-09", fenlei: "餐饮", jine: 1250 } : {}), ...extra }));
+  const add = async (n, type, extra) => { const p = layout.module(type) + (type === "jizhang" ? `/shuju/${id(n)}.json` : `/记录${n}.md`); return (type === "jizhang" ? ledger : notes).create(p, record(n, type, extra), type === "jizhang" ? undefined : "正文不能丢失\n"); };
+  const source = await add(1, type, ["riji", "daiban"].includes(type) ? { guanlian: refs, extra: { preserved: true } } : {});
+  const types = ["riji", "yuedu", "yingshi", "youxi", "yanchu", "lvxing", "zhishi", "daiban", "xiangmu"];
+  const templates = new x.TemplateService(fs, layout, index, operations, clock, ids, "Asia/Shanghai", types);
+  const creation = new x.JournalRelationService(index, templates, service, () => active, types);
+  const context = new x.JournalContextService(index, new x.SearchService(index, "Asia/Shanghai"), "Asia/Shanghai", [...types, "jizhang"]);
+  const tasks = new x.TaskService(index, templates, operations, clock, ids, () => active);
+  const list = new x.TaskListService(index, clock, "Asia/Shanghai");
+  return { list, tasks, creation, context, templates, files, fs, index, notes, ledger, operations, ids, service, source, add, stop: () => { active = false; } };
+}
+
+const all = ["riji", "jizhang", "yuedu", "yingshi", "youxi", "yanchu", "lvxing", "zhishi", "daiban", "xiangmu"];
+const summary = f => new x.SummaryService(f.index, { now: () => now }, "Asia/Shanghai", all);
+test("ongoing includes all eight progress types, excludes pending/completed/cancelled/archive and honors enabled modules", async () => {
+  const f = await fixture(); let n = 2;
+  for (const type of all.filter(t => !["riji", "jizhang"].includes(t))) await f.add(n++, type, { [type === "yuedu" ? "zhuangtai" : "jindu"]: "jinxingzhong" });
+  await f.add(20, "youxi", { jindu: "weikaishi" }); await f.add(21, "youxi", { jindu: "yiwancheng", wanchengshijian: now }); await f.add(22, "youxi", { jindu: "jinxingzhong", yiquxiao: true, quxiaoshijian: now }); await f.add(23, "youxi", { jindu: "jinxingzhong", yiguidang: true });
+  await f.index.rebuild(); const before = [...f.files], result = summary(f).read(); assert.equal(result.ongoing.length, 8); assert.equal(new Set(result.ongoing.map(r => r.type)).size, 8);
+  assert.equal(new x.SummaryService(f.index, { now: () => now }, "Asia/Shanghai", ["yuedu"]).read().ongoing.length, 1); assert.deepEqual([...f.files], before);
+});
+test("today expense uses ledger business date and exact cents, recycled rows excluded, disabled totals unavailable", async () => {
+  const f = await fixture(); await f.add(2, "jizhang", { riqi: "2026-10-10", jine: 1250, shouzhi: "zhichu" }); await f.add(3, "jizhang", { riqi: "2026-10-10", jine: 999, shouzhi: "shouru" }); await f.add(4, "jizhang", { riqi: "2026-10-09", jine: 200, shouzhi: "zhichu", chuangjianshijian: now, gengxinshijian: now }); await f.add(5, "jizhang", { riqi: "2026-10-10", jine: 500, shouzhi: "zhichu", yihuishou: true, huishoushijian: now });
+  await f.index.rebuild(); assert.equal(summary(f).read().expense, 1250); assert.equal(new x.SummaryService(f.index, { now: () => now }, "Asia/Shanghai", []).read().expense, undefined);
+  const tomorrow = new x.SummaryService(f.index, { now: () => "2026-10-10T16:30:00Z" }, "Asia/Shanghai", all); assert.equal(tomorrow.read().today, "2026-10-11"); assert.equal(tomorrow.read().expense, 0);
+});
+test("today task count agrees with task workbench; subscriptions recompute after native progress edits", async () => {
+  const f = await fixture("daiban"), service = summary(f); await f.add(2, "daiban", { kaishiriqi: "2026-10-09", jiezhiriqi: "2026-10-09" }); await f.add(3, "daiban", { kaishiriqi: "2026-10-10", jindu: "jinxingzhong" }); await f.index.rebuild();
+  assert.equal(service.read().tasks.length, f.list.query("jintian").total); let updates = 0; const stop = service.subscribe(() => updates++);
+  const row = f.index.find(id(3)); await f.tasks.execute(await f.tasks.prepare(row, "yiwancheng")); assert.ok(updates > 0); assert.equal(service.read().ongoing.length, 0); assert.equal(service.read().tasks.length, 0); stop();
+});
+test("uninitialized and overflowing totals remain unknown, invalid/duplicate/recycled rows excluded", async () => {
+  const f = await fixture(); assert.equal(summary(f).read().ready, false); assert.equal(summary(f).read().expense, undefined);
+  await f.add(2, "jizhang", { riqi: "2026-10-10", jine: Number.MAX_SAFE_INTEGER, shouzhi: "zhichu" }); await f.add(3, "jizhang", { riqi: "2026-10-10", jine: 1, shouzhi: "zhichu" }); const game = await f.add(4, "youxi", { jindu: "jinxingzhong" }); f.files.set(game.path.replace("记录4", "重复"), f.files.get(game.path)); await f.add(5, "youxi", { jindu: "jinxingzhong", yihuishou: true, huishoushijian: now });
+  await f.index.rebuild(); const result = summary(f).read(); assert.equal(result.expense, undefined); assert.ok(result.moneyError); assert.ok(result.issues > 0); assert.equal(result.ongoing.length, 0);
+});
+test("recent records use updated time, stable ordering and latest twenty limit without truncating ongoing", async () => {
+  const f = await fixture(); for (let n = 2; n < 25; n++) await f.add(n, "youxi", { jindu: "jinxingzhong", gengxinshijian: n === 24 ? now : initial }); await f.index.rebuild(); const result = summary(f).read(); assert.equal(result.recent.length, 20); assert.equal(result.recent[0].id, id(24)); assert.equal(result.ongoing.length, 23);
+});
+test("weekly overview uses Monday and business dates with local completion dates, excludes cancelled and future records", async () => {
+  const f = await fixture();
+  await f.add(2, "riji", { riqi: "2026-10-10" });
+  await f.add(3, "riji", { riqi: "2026-10-04" });
+  await f.add(4, "riji", { riqi: "2026-10-11" });
+  await f.add(5, "daiban", { jindu: "yiwancheng", wanchengshijian: "2026-10-04T16:30:00Z" });
+  await f.add(6, "daiban", { jindu: "yiwancheng", wanchengshijian: now, yiquxiao: true, quxiaoshijian: now });
+  await f.add(7, "yuedu", { zhuangtai: "yiwancheng", duwanshijian: now, wanchengshijian: now });
+  await f.add(8, "jizhang", { riqi: "2026-10-05", shouzhi: "zhichu", jine: 1250 });
+  await f.add(9, "jizhang", { riqi: "2026-10-10", shouzhi: "shouru", jine: 500 });
+  await f.add(10, "jizhang", { riqi: "2026-10-04", shouzhi: "zhichu", jine: 999 });
+  await f.index.rebuild();
+  const result = summary(f).read();
+  assert.equal(result.week.start, "2026-10-05");
+  assert.equal(result.week.journals, 2);
+  assert.equal(result.week.tasks, 1);
+  assert.equal(result.week.books, 1);
+  assert.equal(result.week.expense, 1250);
+  assert.equal(result.todayJournal.id, id(2));
+  const disabled = new x.SummaryService(f.index, { now: () => now }, "Asia/Shanghai", []).read();
+  assert.equal(disabled.week.journals, undefined); assert.equal(disabled.week.expense, undefined);
+  assert.equal(disabled.todayJournal, undefined); assert.equal(disabled.journalEnabled, false);
+  const monday = new x.SummaryService(f.index, { now: () => "2026-10-11T16:30:00Z" }, "Asia/Shanghai", all).read();
+  assert.equal(monday.week.start, "2026-10-12"); assert.equal(monday.week.journals, 0);
+});
+
+test("weekly expense overflow is unknown even when today's expense is valid", async () => {
+  const f = await fixture();
+  await f.add(2, "jizhang", { riqi: "2026-10-05", shouzhi: "zhichu", jine: Number.MAX_SAFE_INTEGER });
+  await f.add(3, "jizhang", { riqi: "2026-10-10", shouzhi: "zhichu", jine: 1 });
+  await f.index.rebuild(); const result = summary(f).read();
+  assert.equal(result.expense, 1); assert.equal(result.week.expense, undefined); assert.ok(result.week.moneyError);
+});

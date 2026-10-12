@@ -1,4 +1,5 @@
 export function yuanToFen(input: string): number {
+  if (typeof input !== "string") throw new Error("金额须以元的十进制文本填写");
   const value = input.trim();
   if (!/^\d+(?:\.\d{1,2})?$/.test(value)) throw new Error("金额须为正数，最多两位小数");
   const [yuan = "", fraction = ""] = value.split(".");

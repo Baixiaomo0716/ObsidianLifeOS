@@ -175,10 +175,11 @@ test("command, ribbon and settings entry open one reusable view", async () => {
   assert.equal(e.workspace.revealed, 3);
   assert.equal(e.roots[0].renders, 1);
   const markup = renderToStaticMarkup(e.roots[0].node);
-  assert.ok(markup.includes("工作台已就绪"));
+  assert.ok(markup.includes("进行中事项"));
+  assert.ok(e.roots[0].node.props.home, "Real summary port is connected");
   assert.ok(markup.includes('aria-labelledby="lifeos-title-'));
   assert.ok(markup.includes('aria-label="LifeOS页面"'));
-  assert.equal((markup.match(/disabled=""/g) ?? []).length, 1, "Only the ledger form stays disabled");
+  assert.equal((markup.match(/disabled=""/g) ?? []).length, 0, "All quick entry actions are now connected");
   e.plugin.settingTab.hide();
   assert.equal(e.plugin.settingTab.containerEl.children.length, 0);
   e.plugin.onunload();

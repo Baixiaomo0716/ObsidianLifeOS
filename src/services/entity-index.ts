@@ -1,7 +1,7 @@
 import type { FileSystem } from "../ports/file-system";
 import type { Snapshot } from "../ports/entity-store";
 import { StorageLayout } from "../storage/paths";
-import { MarkdownCodec, JsonCodec } from "../storage/codecs";
+import { decodeAndRemember } from "../storage/identity-cache";
 import { cloneData } from "../storage/data-values";
 import { validateRecord, uuidV4 } from "../domain/validation";
 import { StoreError } from "../domain/errors";
@@ -28,7 +28,7 @@ export class EntityIndex {
     if (!this.layout.isManaged(path)) return;
     try {
       const raw = await this.fs.read(path);
-      const decoded = (this.layout.typeFor(path) === "jizhang" ? new JsonCodec() : new MarkdownCodec()).decode(raw);
+      const decoded = decodeAndRemember(this.fs, path, raw, this.layout.typeFor(path) === "jizhang" ? "ledger" : "note");
       this.layout.assertRecord(path, decoded.attributes);
       const validation = validateRecord(decoded.attributes);
       entries.set(path, { path, version: { path, original: raw }, ...decoded, validation });

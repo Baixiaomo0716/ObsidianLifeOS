@@ -1,3 +1,4 @@
+import { hasMergeConflict } from "./merge-conflict";
 import { Document, isAlias, isMap, isScalar, parseDocument, Scalar, visit } from "yaml";
 import { StoreError } from "../domain/errors";
 import { dataObject, hasOwn, sameData } from "./data-values";
@@ -73,6 +74,7 @@ function storedBody(attributes: Record<string, unknown>, body: string): string {
 }
 export class MarkdownCodec implements Codec {
   decode(raw: string): Decoded {
+    if (hasMergeConflict(raw)) throw new StoreError("invalid_format", "笔记包含未解决的Git冲突块，请核对双方版本后手动处理；不会自动覆盖");
     const parts = splitNote(raw);
     const rawAttributes = dataObject(yamlDocument(parts.yaml).toJS({ maxAliasCount: 0 }));
     if (hasOwn(rawAttributes, "tags")) {
@@ -138,6 +140,7 @@ export class MarkdownCodec implements Codec {
 }
 export class JsonCodec implements Codec {
   decode(raw: string): Decoded {
+    if (hasMergeConflict(raw)) throw new StoreError("invalid_format", "笔记包含未解决的Git冲突块，请核对双方版本后手动处理；不会自动覆盖");
     try {
       const parsed: unknown = JSON.parse(raw);
       // Native JSON.parse drops duplicate keys. YAML's flow-map parser detects them.

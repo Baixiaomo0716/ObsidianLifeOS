@@ -6,17 +6,20 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as esbuild from "esbuild";
 const require = createRequire(import.meta.url), built = await esbuild.build({ entryPoints: ["src/ui/RelationPicker.tsx"], bundle: true, format: "cjs", platform: "browser", write: false, external: ["react", "react/jsx-runtime"] });
-function harness({ refs = [], fail = false } = {}) {
-  const state = []; let cursor = 0, saves = 0, prepares = 0, closed = 0, cancelled = 0;
+function harness({ refs = [], fail = false, withCreation = false, withLedger = false, creationFail = false } = {}) {
+  const state = []; let cursor = 0, saves = 0, prepares = 0, closed = 0, cancelled = 0, creations = 0, creationPrepares = 0;
   const fake = { ...React, useState(initial) { const n = cursor++; if (!(n in state)) state[n] = initial; return [state[n], (value) => { state[n] = typeof value === "function" ? value(state[n]) : value; }]; }, useRef(initial) { const n = cursor++; if (!(n in state)) state[n] = { current: initial }; return state[n]; }, useEffect() {}, useId() { return "picker"; } };
   const module = { exports: {} }; vm.runInNewContext(built.outputFiles[0].text, { module, exports: module.exports, require: (name) => name === "react" ? fake : require(name) });
   const rows = [{ id: "self", title: "自身", type: "riji" }, { id: "a", title: "日记目标", type: "riji" }, { id: "b", title: "记账目标", type: "jizhang" }], requests = [];
   const search = { subscribe: () => () => {}, query: ({ type, text }) => ({ ready: true, page: 1, pages: 1, items: rows.filter((item) => item.type === type && item.title.includes(text)) }), relations: (id) => ({ target: rows.find((item) => item.id === id) }) };
   const service = { prepare: async (_, selected) => { prepares++; return { selected: [...selected] }; }, execute: async (draft) => { saves++; requests.push(draft); if (fail && saves === 1) throw Error("未确认回执"); } };
-  const props = { source: { attributes: { biaoshi: "self", guanlian: refs } }, search, service, allowed: ["riji", "jizhang"], close: () => cancelled++, active: () => true, saved: () => closed++ };
+  const creationRequests = [];
+  const creation = { types: ["riji"], today: () => "2026-10-10", prepare: async (source, selected, type, value) => { creationPrepares++; return { source, selected, type, value }; }, execute: async (draft) => { creations++; creationRequests.push(draft); if (creationFail && creations === 1) throw Error("新建回执未确认"); return { source: { ...draft.source, attributes: { ...draft.source.attributes, guanlian: [...draft.selected, "a"] } }, selected: [...draft.selected, "a"] }; } };
+  const ledgerCreation = { today: () => "2026-10-10", categories: () => ["餐饮"], prepare: async (source, selected, input) => { creationPrepares++; return { source, selected, input, id: "new-ledger" }; }, execute: async (draft) => { creations++; return { id: draft.id, source: { ...draft.source, attributes: { ...draft.source.attributes, guanlian: [...draft.selected, draft.id] } }, selected: [...draft.selected, draft.id] }; } };
+  const props = { source: { attributes: { shiti: "riji", biaoshi: "self", guanlian: refs } }, search, service, ...(withCreation ? { creation } : {}), ...(withLedger ? { ledgerCreation } : {}), allowed: ["riji", "jizhang"], close: () => cancelled++, active: () => true, saved: () => closed++ };
   const render = () => { cursor = 0; return module.exports.RelationPicker(props); };
   const walk = (node) => !node || typeof node !== "object" ? [] : [node, ...React.Children.toArray(node.props?.children).flatMap(walk)];
-  return { render, nodes: () => walk(render()), html: () => renderToStaticMarkup(render()), stats: () => ({ saves, prepares, closed, cancelled, requests }) };
+  return { render, nodes: () => walk(render()), html: () => renderToStaticMarkup(render()), stats: () => ({ saves, prepares, closed, cancelled, requests, creations, creationPrepares, creationRequests }) };
 }
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 test("type changes keep cross-type checked selections and self never appears", async () => {
@@ -54,4 +57,34 @@ test("modal close unmounts once; late save reports completion without reopening 
   dispose(); dispose(); assert.equal(unmounts, 1); assert.equal(closed, 1); assert.equal(props.active(), false);
   props.saved(); assert.equal(modal.opens, 1); assert.equal(notices.length, 1);
   props.failed("错误"); assert.equal(notices.length, 2); ownerActive = false; props.saved(); props.failed("错误"); assert.equal(notices.length, 2);
+});
+
+
+test("inline cancellation leaves original selection and writes nothing; ledger has no fake create", () => {
+  const h = harness({ refs: ["b"], withCreation: true });
+  h.nodes().find((n) => n.type === "button" && n.props.children.join?.("") === "新建日记并返回").props.onClick();
+  h.nodes().find((n) => n.type === "button" && n.props.children === "取消新建").props.onClick();
+  assert.ok(h.html().includes("已选择 1 条")); assert.equal(h.stats().creations, 0);
+  h.nodes().find((n) => n.type === "select").props.onChange({ target: { value: "jizhang" } });
+  assert.ok(h.html().includes("此类型暂不支持新建返回")); assert.equal(h.nodes().some((n) => n.type === "button" && n.props.children.join?.("") === "新建记账并返回"), false);
+});
+
+test("creation return preserves choices and double submit retries one captured request", async () => {
+  const h = harness({ refs: ["b"], withCreation: true, creationFail: true });
+  h.nodes().find((n) => n.type === "button" && n.props.children.join?.("") === "新建日记并返回").props.onClick();
+  const button = h.nodes().find((n) => n.type === "button" && n.props.children === "保存新笔记并关联"); button.props.onClick(); button.props.onClick(); await flush();
+  assert.equal(h.stats().creationPrepares, 1); assert.equal(h.stats().creations, 1);
+  h.nodes().find((n) => n.type === "button" && n.props.children === "重试新建并关联").props.onClick(); await flush();
+  assert.equal(h.stats().creationRequests[0], h.stats().creationRequests[1]); assert.ok(h.html().includes("已选择 2 条")); assert.equal(h.stats().closed, 0);
+  h.nodes().find((n) => n.type === "button" && n.props.children === "保存关联").props.onClick(); await flush();
+  assert.deepEqual(h.stats().requests[0].selected, ["b", "a"]);
+});
+
+test("ledger create-return uses dedicated form, retains selection and returns updated source for final save", async () => {
+  const h = harness({ refs: ["a"], withCreation: true, withLedger: true }); h.nodes().find(n => n.type === "select").props.onChange({ target: { value: "jizhang" } }); h.nodes().find(n => n.props.children === "新建记账并返回").props.onClick();
+  const form = h.nodes().find(n => typeof n.type === "function" && n.type.name === "LedgerForm"); assert.ok(form); const draft = await form.props.service.prepare({ date: "2026-10-10", kind: "zhichu", category: "餐饮", amount: "12.50", tags: [] }); await form.props.service.execute(draft); assert.equal(h.stats().creations, 1); assert.ok(h.html().includes("已选择 2 条")); assert.equal(h.stats().closed, 0);
+  h.nodes().find(n => n.props.children === "保存关联").props.onClick(); await flush(); assert.deepEqual(h.stats().requests[0].selected, ["a", "new-ledger"]);
+});
+test("cancelling dedicated ledger form preserves previous choices and performs no creation", () => {
+  const h = harness({ refs: ["a"], withCreation: true, withLedger: true }); h.nodes().find(n => n.type === "select").props.onChange({ target: { value: "jizhang" } }); h.nodes().find(n => n.props.children === "新建记账并返回").props.onClick(); const form = h.nodes().find(n => typeof n.type === "function" && n.type.name === "LedgerForm"); form.props.close(); assert.ok(h.html().includes("已选择 1 条")); assert.equal(h.stats().creations, 0); assert.equal(h.stats().creationPrepares, 0);
 });

@@ -2,7 +2,7 @@ import { isRiqi, jinri, xingqi } from "../domain/date";
 import type { Clock } from "../ports/clock";
 import { EntityIndex } from "./entity-index";
 import { TemplateService, type NoteDraft } from "./template-service";
-export interface JournalDay { date: string; status: "empty" | "ready" | "blocked"; paths: string[]; weather: string; lunar: string; weekday: string; tags: string[]; body: string; messages: string[] }
+export interface JournalDay { id?: string; date: string; status: "empty" | "ready" | "blocked"; paths: string[]; weather: string; lunar: string; weekday: string; tags: string[]; body: string; messages: string[] }
 export interface JournalDraft { readonly date: string }
 export class JournalService {
   private drafts = new WeakMap<JournalDraft, { existing?: string; note?: NoteDraft }>();
@@ -24,7 +24,7 @@ export class JournalService {
       return recycled ? { ...empty, status: "blocked", paths: [recycled.path], messages: ["原位置已有回收的日记，请恢复或核对原件，不会覆盖。"] } : empty;
     }
     const a = entry.attributes;
-    return { ...empty, status: "ready", paths: [entry.path], weather: String(a.tianqi ?? ""), weekday: String(a.xingqi), lunar: String(a.nongli), tags: Array.isArray(a.biaoqian) ? [...a.biaoqian] as string[] : [], body: entry.body, messages: [] };
+    return { ...empty, id: String(a.biaoshi), status: "ready", paths: [entry.path], weather: String(a.tianqi ?? ""), weekday: String(a.xingqi), lunar: String(a.nongli), tags: Array.isArray(a.biaoqian) ? [...a.biaoqian] as string[] : [], body: entry.body, messages: [] };
   }
   month(month: string): JournalDay[] {
     if (!/^\d{4}-\d{2}$/.test(month) || !isRiqi(`${month}-01`)) throw new Error("月份无效");

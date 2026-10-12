@@ -1,0 +1,15 @@
+import { useRef, useState } from "react";
+import type { LedgerService, LedgerDraft, LedgerInput } from "../services/ledger-service";
+import { isRiqi, xingqi } from "../domain/date";
+export interface LedgerFormProps { service: Pick<LedgerService, "today" | "categories" | "execute"> & { prepare: (input: LedgerInput) => LedgerDraft | Promise<LedgerDraft> }; initial?: LedgerInput; active: () => boolean; saved: (id: string) => void; close: () => void; failed?: (message: string) => void }
+export function LedgerForm({ service, active, saved, close, failed, initial }: LedgerFormProps) {
+  const [date, setDate] = useState(initial?.date ?? service.today()), [kind, setKind] = useState<LedgerInput["kind"]>(initial?.kind ?? "zhichu"), [category, setCategory] = useState(initial?.category ?? service.categories("zhichu")[0] ?? ""), [amount, setAmount] = useState(initial?.amount ?? ""), [tags, setTags] = useState(initial?.tags.join("，") ?? ""), [busy, setBusy] = useState(false), [message, setMessage] = useState(""), [draft, setDraft] = useState<LedgerDraft | null>(null);
+  const saving = useRef(false), locked = busy || draft !== null;
+  const save = async () => {
+    if (saving.current || !active()) return; saving.current = true; setBusy(true);
+    try { const request = draft ?? await service.prepare({ date, kind, category, amount, tags: tags.split(/[,，\n]/).map((v) => v.trim()).filter(Boolean) }); if (active()) setDraft(request); const id = await service.execute(request); saved(id); }
+    catch (error) { const text = error instanceof Error ? error.message : String(error); if (active()) setMessage(text); else failed?.(text); }
+    finally { saving.current = false; if (active()) setBusy(false); }
+  };
+  return <section aria-label="新建记账"><h2>{initial ? "编辑记账" : "新建记账"}</h2><div className="lifeos-query-fields"><label>日期<input type="date" value={date} disabled={locked} onChange={(e) => setDate(e.target.value)} /></label><p>星期：{isRiqi(date) ? xingqi(date) : "请填写有效日期"}</p><label>收入 / 支出<select value={kind} disabled={locked} onChange={(e) => { const value = e.target.value as LedgerInput["kind"]; setKind(value); setCategory(service.categories(value)[0] ?? ""); }}><option value="zhichu">支出</option><option value="shouru">收入</option></select></label><label>分类<select value={category} disabled={locked} onChange={(e) => setCategory(e.target.value)}><option value="">请选择分类</option>{[...new Set([...service.categories(kind), ...(initial?.kind === kind ? [initial.category] : [])])].map((value) => <option key={value} value={value}>{value}</option>)}</select></label><label>金额（元）<input type="text" inputMode="decimal" value={amount} disabled={locked} onChange={(e) => setAmount(e.target.value)} /></label><label>标签<input value={tags} disabled={locked} placeholder="用逗号分隔" onChange={(e) => setTags(e.target.value)} /></label></div><p role="status">{message}</p>{draft && <p>重试沿用同一笔记录。修改内容请关闭后核对账本，再重新填写。</p>}<div className="lifeos-template-actions"><button type="button" disabled={busy} onClick={close}>取消</button><button type="button" disabled={busy} onClick={() => { void save(); }}>{draft ? "重试保存" : "保存记账"}</button></div></section>;
+}

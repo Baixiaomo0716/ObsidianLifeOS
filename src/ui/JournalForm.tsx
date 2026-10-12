@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { isRiqi } from "../domain/date";
 import type { JournalDraft, JournalService } from "../services/journal-service";
-export interface JournalPort { service: JournalService; openPath: (path: string) => Promise<void> }
+import { JournalRelations, type JournalRelationsPort } from "./JournalRelations";
+export interface JournalPort { service: JournalService; openPath: (path: string) => Promise<void>; relations?: JournalRelationsPort }
 function adjacentMonth(month: string, amount: number): string {
   const [year, value] = month.split("-").map(Number), total = year! * 12 + value! - 1 + amount, next = `${String(Math.floor(total / 12)).padStart(4, "0")}-${String(total % 12 + 1).padStart(2, "0")}`;
   return isRiqi(`${next}-01`) ? next : month;
@@ -32,6 +33,7 @@ export function JournalForm({ port }: { port: JournalPort }) {
     <label htmlFor={`${id}-date`}>日记日期<input id={`${id}-date`} type="date" value={date} disabled={busy} onChange={(e) => choose(e.target.value)} /></label>
     <h3>{current.date} · {current.weekday}</h3>
     {!port.service.ready ? <p role="status">正在读取日记…</p> : current.status === "blocked" ? <><p role="alert">该日需要核对，暂停新建。</p>{current.messages.map((message, n) => <p key={n}>{message}</p>)}{current.paths.map((path) => <button type="button" key={path} onClick={() => { void port.openPath(path).catch((error: unknown) => { if (mounted.current) setMessage(String(error)); }); }}>检查原笔记：{path}</button>)}</> : <><p>{current.lunar} {current.weather || "天气未填写"} {current.tags.map((tag) => `#${tag}`).join(" ")}</p>{current.status === "ready" ? <pre className="lifeos-journal-body">{current.body || "正文尚未填写"}</pre> : <p>这一天还没有日记。</p>}<button type="button" className="mod-cta" disabled={busy || !port.service.ready} onClick={() => { void open(); }}>{busy ? "处理中…" : pending.current ? "重试打开日记" : current.status === "ready" ? "查看 / 编辑日记" : "创建并打开日记"}</button></>}
+    {port.relations && <JournalRelations date={date} sourceId={current.id} port={port.relations} />}
     <p role="status" aria-live="polite">{message}</p><p className="lifeos-hint">正文使用原生编辑器填写。新建文件按年-月归档；手工修改不会被浏览操作覆盖。</p>
   </section>;
 }

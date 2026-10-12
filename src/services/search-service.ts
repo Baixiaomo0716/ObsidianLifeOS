@@ -12,6 +12,7 @@ export const dateFields: Partial<Record<Shiti, readonly [string, string][]>> = {
 export interface SearchQuery { type: Shiti | "all"; text?: string; tag?: string; progress?: string; dateField?: string; from?: string; to?: string; page?: number; allowed?: readonly Shiti[] }
 export interface SearchItem { id: string; path: string; type: Shiti; title: string; tags: string[]; progress: string | undefined; date: string; references: string[] }
 export interface SearchResult { ready: boolean; issues: number; total: number; page: number; pages: number; items: SearchItem[]; error?: string }
+function tagKey(value: string): string { return value.trim().replace(/^#/, "").toLocaleLowerCase(); }
 export class SearchService {
   constructor(private readonly index: EntityIndex, private readonly zone: string) {}
   subscribe(listener: () => void): () => void { return this.index.subscribe(listener); }
@@ -37,7 +38,7 @@ export class SearchService {
     const rows = this.records().filter(({ snapshot, item }) => {
       if (query.allowed && !query.allowed.includes(item.type)) return false;
       if (query.type !== "all" && query.type !== item.type) return false;
-      if (query.tag && !item.tags.some((tag) => tag.toLocaleLowerCase() === query.tag!.trim().replace(/^#/, "").toLocaleLowerCase())) return false;
+      if (query.tag && !item.tags.some((tag) => tagKey(tag) === tagKey(query.tag!))) return false;
       if (query.progress && (query.type === "all" || jinduZiduan(query.type)) && item.progress !== query.progress) return false;
       const fields = dateFields[item.type] ?? [], selected = query.type !== "all" && fields.some(([key]) => key === query.dateField) ? query.dateField : fields[0]?.[0];
       const raw = selected ? snapshot.attributes[selected] : undefined;
@@ -49,6 +50,21 @@ export class SearchService {
     }).map(({ item }) => item).sort((a, b) => b.date.localeCompare(a.date) || a.path.localeCompare(b.path));
     const pages = Math.max(1, Math.ceil(rows.length / 50)), page = Math.min(pages, Math.max(1, Math.floor(query.page ?? 1) || 1));
     return { ...empty, total: rows.length, pages, page, items: rows.slice((page - 1) * 50, page * 50) };
+  }
+  tags(type: Shiti | "all", allowed: readonly Shiti[], text = "", requestedPage = 1) {
+    const ready = this.index.initialized, groups = new Map<string, { label: string; count: number }>();
+    if (ready) for (const { item } of this.records()) {
+      if (!allowed.includes(item.type) || (type !== "all" && item.type !== type)) continue;
+      const seen = new Set<string>();
+      for (const stored of item.tags) {
+        const label = stored.trim().replace(/^#/, ""), key = tagKey(stored); if (!key || seen.has(key)) continue; seen.add(key);
+        const group = groups.get(key); if (group) group.count++; else groups.set(key, { label, count: 1 });
+      }
+    }
+    const needle = text.trim().replace(/^#/, "").toLocaleLowerCase();
+    const rows = [...groups.values()].filter(row => row.label.toLocaleLowerCase().includes(needle)).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    const pages = Math.max(1, Math.ceil(rows.length / 50)), page = Math.min(pages, Math.max(1, Math.floor(requestedPage) || 1));
+    return { ready, issues: ready ? this.index.issues().length : 0, total: rows.length, page, pages, items: rows.slice((page - 1) * 50, page * 50) };
   }
   relations(id: string): { outgoing: { id: string; target?: SearchItem | undefined }[]; incoming: SearchItem[]; target?: SearchItem | undefined } {
     const rows = this.records().map(({ item }) => item), key = id.toLowerCase(), target = rows.find((item) => item.id === key);

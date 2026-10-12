@@ -1,3 +1,4 @@
+import { inspectLayout, layoutReport } from "./layout-check";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -34,6 +35,10 @@ export class LifeOSView extends ItemView {
     }
   }
 
+  inspectLayout(): string {
+    if (!this.mount || this.disposed || !this.isEnabled()) throw new Error("请先打开LifeOS页面");
+    return layoutReport(inspectLayout(this.mount));
+  }
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;

@@ -94,3 +94,397 @@
 .lifeos-journal-calendar button[aria-pressed=true] { outline:2px solid var(--interactive-accent); }
 .lifeos-journal-calendar small { font-size:10px; }
 .lifeos-journal-body { white-space:pre-wrap; overflow-wrap:anywhere; max-height:260px; overflow:auto; font-family:inherit; }
+.lifeos-root .lifeos-home-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--background-modifier-border); } .lifeos-root .lifeos-home-row button { height:auto; white-space:normal; text-align:left; max-width:100%; } .lifeos-root .lifeos-home-row small { color:var(--text-muted); }
+
+/* DEV-030: narrow panes and long records retain reachable controls. */
+.lifeos-root .lifeos-grid { flex-shrink:0; }
+.lifeos-root .lifeos-module-row { flex-wrap:wrap; }
+.lifeos-root .lifeos-module-row > * { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+.lifeos-root input, .lifeos-root select, .lifeos-root textarea { min-width:0; max-width:100%; }
+.lifeos-root pre.lifeos-relation-results, .lifeos-layout-report { white-space:pre-wrap; overflow-wrap:anywhere; }
+.lifeos-template-actions { flex-wrap:wrap; }
+.lifeos-relation-picker { min-width:0; overflow-wrap:anywhere; }
+.lifeos-relation-picker .lifeos-module-row { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; }
+.lifeos-relation-picker .lifeos-module-row > span { min-width:0; overflow-wrap:anywhere; }
+.lifeos-relation-choice input { flex-shrink:0; }
+.lifeos-query-fields label { min-width:0; flex-basis:130px; }
+.lifeos-query-fields input, .lifeos-query-fields select { max-width:100%; min-width:0; }
+.lifeos-root .lifeos-module-row button, .lifeos-root .lifeos-filter-bar button, .lifeos-template-actions button { white-space:normal; height:auto; min-height:36px; max-width:100%; overflow-wrap:anywhere; }
+.lifeos-layout-report { max-height:60vh; overflow:auto; }
+@container (max-width:680px) {
+  .lifeos-root .lifeos-module-row button, .lifeos-root .lifeos-filter-bar button { min-height:48px; }
+  .lifeos-root .lifeos-journal-calendar { gap:3px; }
+}.lifeos-relation-picker > .lifeos-template-actions, .lifeos-root section[aria-label="新建记账"] > .lifeos-template-actions, .lifeos-root section[aria-label="待办日期编辑"] > .lifeos-template-actions { position:sticky; bottom:0; z-index:2; padding:10px 0; background:var(--background-secondary); }
+.lifeos-root section[aria-label="阅读编辑"] fieldset { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; min-width:0; margin:12px 0; border:1px solid var(--background-modifier-border); border-radius:8px; padding:12px; }
+.lifeos-root section[aria-label="阅读编辑"] label { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.lifeos-root section[aria-label="阅读编辑"] label:has(textarea) { grid-column:1 / -1; }
+.lifeos-root section[aria-label="阅读编辑"] textarea { width:100%; resize:vertical; }
+.lifeos-root section[aria-label="阅读编辑"] > .lifeos-template-actions { position:sticky; bottom:0; padding:10px 0; background:var(--background-secondary); z-index:2; }
+
+.lifeos-root section[aria-label="影视编辑"] fieldset { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; min-width:0; margin:12px 0; border:1px solid var(--background-modifier-border); border-radius:8px; padding:12px; }
+.lifeos-root section[aria-label="影视编辑"] label { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.lifeos-root section[aria-label="影视编辑"] label:has(textarea) { grid-column:1 / -1; }
+.lifeos-root section[aria-label="影视编辑"] textarea { width:100%; resize:vertical; }
+.lifeos-root section[aria-label="影视编辑"] > .lifeos-template-actions { position:sticky; bottom:0; padding:10px 0; background:var(--background-secondary); z-index:2; }
+
+.lifeos-root section[aria-label="游戏编辑"] fieldset { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; min-width:0; margin:12px 0; border:1px solid var(--background-modifier-border); border-radius:8px; padding:12px; }
+.lifeos-root section[aria-label="游戏编辑"] label { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.lifeos-root section[aria-label="游戏编辑"] label:has(textarea) { grid-column:1 / -1; }
+.lifeos-root section[aria-label="游戏编辑"] textarea { width:100%; resize:vertical; }
+.lifeos-root section[aria-label="游戏编辑"] > .lifeos-template-actions { position:sticky; bottom:0; padding:10px 0; background:var(--background-secondary); z-index:2; }
+
+.lifeos-root section[aria-label="演出编辑"] fieldset { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; min-width:0; margin:12px 0; border:1px solid var(--background-modifier-border); border-radius:8px; padding:12px; }
+.lifeos-root section[aria-label="演出编辑"] label { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.lifeos-root section[aria-label="演出编辑"] label:has(textarea) { grid-column:1 / -1; }
+.lifeos-root section[aria-label="演出编辑"] textarea { width:100%; resize:vertical; }
+.lifeos-root section[aria-label="演出编辑"] > .lifeos-template-actions { position:sticky; bottom:0; padding:10px 0; background:var(--background-secondary); z-index:2; }
+
+.lifeos-root section[aria-label="旅行编辑"] fieldset { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; min-width:0; margin:12px 0; border:1px solid var(--background-modifier-border); border-radius:8px; padding:12px; }
+.lifeos-root section[aria-label="旅行编辑"] label { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.lifeos-root section[aria-label="旅行编辑"] label:has(textarea) { grid-column:1 / -1; }
+.lifeos-root section[aria-label="旅行编辑"] textarea { width:100%; resize:vertical; }
+.lifeos-root section[aria-label="旅行编辑"] > .lifeos-template-actions { position:sticky; bottom:0; padding:10px 0; background:var(--background-secondary); z-index:2; }
+
+.lifeos-project-board { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:12px 0; }
+.lifeos-board-column { min-width:0; border:1px solid var(--background-modifier-border); border-radius:8px; padding:12px; background:var(--background-primary); }
+.lifeos-board-column h3 { margin:0 0 10px; }
+.lifeos-board-items { height:320px; overflow:auto; overscroll-behavior:contain; }
+.lifeos-board-item { padding:10px; margin-bottom:8px; border:1px solid var(--background-modifier-border); border-radius:6px; overflow-wrap:anywhere; }
+.lifeos-board-item button { white-space:normal; max-width:100%; height:auto; }
+.lifeos-board-column .lifeos-template-actions { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:10px; }
+@media (max-width:700px) { .lifeos-project-board { grid-template-columns:minmax(0,1fr); } .lifeos-board-items { height:240px; } }
+
+.lifeos-root section[aria-label="知识编辑"] fieldset { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; min-width:0; margin:12px 0; border:1px solid var(--background-modifier-border); border-radius:8px; padding:12px; }
+.lifeos-root section[aria-label="知识编辑"] label { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.lifeos-root section[aria-label="知识编辑"] label:has(textarea) { grid-column:1 / -1; }
+.lifeos-root section[aria-label="知识编辑"] textarea { width:100%; resize:vertical; }
+.lifeos-root section[aria-label="知识编辑"] > .lifeos-template-actions { position:sticky; bottom:0; padding:10px 0; background:var(--background-secondary); z-index:2; }
+
+.lifeos-tag-layout { display:grid; grid-template-columns:minmax(160px,1fr) minmax(0,2fr); gap:16px; }
+.lifeos-tag-layout > section { min-width:0; border:1px solid var(--background-modifier-border); border-radius:8px; padding:12px; }
+.lifeos-tag-layout label { display:flex; flex-direction:column; gap:6px; }
+.lifeos-tag-button { display:block; margin:8px 0; white-space:normal; max-width:100%; height:auto; overflow-wrap:anywhere; }
+@media (max-width:700px) { .lifeos-tag-layout { grid-template-columns:minmax(0,1fr); } }
+
+.lifeos-period-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; margin:12px 0; }
+.lifeos-period-metrics > section { padding:12px; border:1px solid var(--background-modifier-border); border-radius:8px; min-width:0; }
+
+/* Retro LifeOS: isolated palette keeps native Obsidian panes independent. */
+.lifeos-root {
+  --text-normal:#191919; --text-muted:#625b51; --text-faint:#766d60;
+  --background-primary:#f4ebdd; --background-secondary:#f8f1e6;
+  --background-modifier-border:#c8bdaa; --interactive-accent:#658761;
+  --lifeos-ink:#191919; --lifeos-ochre:#dfa05d; --lifeos-red:#ac5045; --lifeos-green:#658761;
+  font-family:var(--font-interface, "Microsoft YaHei", sans-serif);
+  color-scheme:light;
+}
+.lifeos-root .lifeos-app { padding:16px; gap:18px; }
+.lifeos-root .lifeos-sidebar { width:190px; padding:24px 12px; border:2px solid var(--lifeos-ink); border-radius:18px; box-shadow:4px 4px 0 var(--lifeos-ink); }
+.lifeos-root .lifeos-brand { display:flex; flex-direction:column; align-items:flex-start; padding:0 8px 24px; border-bottom:1px solid var(--lifeos-ink); }
+.lifeos-root .lifeos-brand strong { font:bold 34px Georgia,serif; }
+.lifeos-root .lifeos-brand small { font-size:12px; line-height:1.6; }
+.lifeos-root .lifeos-navigation { flex:1; }
+.lifeos-root .lifeos-navigation button { color:var(--text-normal); min-height:56px; padding:12px; font-size:17px; border-radius:12px; }
+.lifeos-root .lifeos-navigation button:last-child { margin-top:auto; border-top:1px solid var(--lifeos-ink); }
+.lifeos-root .lifeos-navigation button[aria-current="page"] { background:var(--lifeos-ochre); border:2px solid var(--lifeos-ink); box-shadow:3px 3px 0 var(--lifeos-ink); }
+.lifeos-root .lifeos-sidebar-note { display:none; }
+.lifeos-root .lifeos-header { margin:0 4px 0 0; padding:24px 28px; min-height:132px; background:var(--lifeos-ochre); border:2px solid var(--lifeos-ink); border-radius:18px; box-shadow:4px 4px 0 var(--lifeos-ink); }
+.lifeos-root .lifeos-header h1 { font-family:var(--font-text, "Microsoft YaHei",sans-serif); font-size:clamp(30px,4cqi,52px); font-weight:800; line-height:1.2; }
+.lifeos-root .lifeos-eyebrow { margin:8px 0 0; color:var(--text-normal); font-size:15px; }
+.lifeos-root .lifeos-page { padding:20px 6px 16px 0; }
+.lifeos-root .lifeos-grid { gap:18px; }
+.lifeos-root .lifeos-card { height:350px; background:var(--background-secondary); border:2px solid var(--lifeos-ink); border-radius:18px; box-shadow:4px 4px 0 var(--lifeos-ink); }
+.lifeos-root .lifeos-card-header { margin:0 20px; padding:18px 0 12px; border-color:var(--lifeos-ink); }
+.lifeos-root .lifeos-card-header h2 { font-size:24px; font-weight:750; }
+.lifeos-root .lifeos-card-body { padding:18px 20px; }
+.lifeos-root button,.lifeos-root select,.lifeos-root input:not([type=checkbox]),.lifeos-root textarea { background:var(--background-secondary); color:var(--text-normal); border:2px solid var(--lifeos-ink); border-radius:9px; box-shadow:none; font:inherit; padding:8px 12px; }
+.lifeos-root button { cursor:pointer; height:auto; min-height:38px; }
+.lifeos-root button:hover:not(:disabled) { background:#e8d8c0; }
+.lifeos-root button:disabled { opacity:.5; cursor:default; }
+.lifeos-root button:focus-visible,.lifeos-root input:focus-visible,.lifeos-root textarea:focus-visible,.lifeos-root select:focus-visible,.lifeos-root [tabindex]:focus-visible { outline:3px solid var(--lifeos-green); outline-offset:2px; }
+.lifeos-root .lifeos-icon { width:26px; height:26px; flex-shrink:0; }
+.lifeos-root [data-type] { --type-color:var(--lifeos-ochre); --type-ink:var(--lifeos-ink); }
+.lifeos-root [data-type=jizhang],.lifeos-root [data-type=yuedu],.lifeos-root [data-type=yanchu] { --type-color:var(--lifeos-green); --type-ink:#fff; }
+.lifeos-root [data-type=daiban],.lifeos-root [data-type=yingshi],.lifeos-root [data-type=lvxing] { --type-color:var(--lifeos-red); --type-ink:#fff; }
+.lifeos-root .lifeos-type-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; flex-shrink:0; border-radius:10px; background:var(--type-color); color:var(--type-ink); }
+.lifeos-root .lifeos-type-badge { border-radius:7px; background:var(--type-color); color:var(--type-ink); padding:5px 10px; font-size:12px; white-space:nowrap; }
+.lifeos-root .lifeos-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; height:100%; margin:0; }
+.lifeos-root .lifeos-shortcuts button { font-size:0; min-width:0; align-items:flex-start; justify-content:center; padding:18px 14px; gap:16px; border-radius:14px; background:var(--type-color); color:var(--type-ink); box-shadow:3px 3px 0 var(--lifeos-ink); }
+.lifeos-root .lifeos-shortcuts button:hover:not(:disabled) { background:var(--type-color); filter:brightness(1.05); }
+.lifeos-root .lifeos-shortcuts strong { font-size:20px; }
+.lifeos-root .lifeos-shortcuts small { font-size:13px; line-height:1.7; white-space:normal; text-align:left; }
+.lifeos-root .lifeos-shortcuts .lifeos-icon { width:34px; height:34px; }
+.lifeos-root .lifeos-shortcuts button>span { align-self:flex-end; font-size:24px; }
+.lifeos-root .lifeos-today-summary { display:flex; align-items:center; gap:24px; padding-bottom:16px; border-bottom:1px solid var(--background-modifier-border); }
+.lifeos-root .lifeos-today-summary>div { display:flex; flex-direction:column; gap:8px; }
+.lifeos-root .lifeos-date { font:500 clamp(28px,4cqi,48px) Georgia,serif; white-space:nowrap; }
+.lifeos-root .lifeos-expense { border-left:1px solid var(--background-modifier-border); padding-left:24px; }
+.lifeos-root .lifeos-expense strong { color:var(--lifeos-red); font:500 30px Georgia,serif; }
+.lifeos-root .lifeos-home-row { flex-wrap:nowrap; padding:10px 0; }
+.lifeos-root .lifeos-home-row>button { flex:1; background:transparent; border:0; padding:4px 0; }
+.lifeos-root .lifeos-home-row small { font-size:11px; }
+.lifeos-root .lifeos-home-today .lifeos-type-icon { width:24px; height:24px; background:transparent; color:var(--lifeos-ink); }
+.lifeos-root .lifeos-home-today .lifeos-type-badge { display:none; }
+.lifeos-root .lifeos-record-grid { grid-template-columns:minmax(0,3fr) minmax(230px,1fr); }
+.lifeos-root .lifeos-record-grid .lifeos-card { height:auto; min-height:620px; }
+.lifeos-root .lifeos-module-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.lifeos-root .lifeos-module-list .lifeos-module-row { flex-wrap:nowrap; border:1.5px solid var(--lifeos-ink); border-radius:12px; padding:14px 12px; gap:12px; }
+.lifeos-root .lifeos-module-list .lifeos-module-row>div { flex:1; }
+.lifeos-root .lifeos-module-list .lifeos-module-row strong { font-size:18px; }
+.lifeos-root .lifeos-module-list .lifeos-module-row button { flex-shrink:0; font-size:12px; padding:8px; }
+.lifeos-root .lifeos-record-method { display:flex; gap:16px; padding:24px 0; border-top:1px solid var(--background-modifier-border); }
+.lifeos-root .lifeos-record-method>.lifeos-icon { width:36px; height:36px; color:var(--lifeos-green); }
+.lifeos-root .lifeos-record-method h3 { margin:0 0 12px; }
+.lifeos-root .lifeos-review-layout>.lifeos-filter-bar { border:2px solid var(--lifeos-ink); border-radius:14px; padding:14px 18px; background:var(--background-secondary); box-shadow:3px 3px 0 var(--lifeos-ink); }
+.lifeos-root button[aria-pressed=true] { background:var(--lifeos-ochre); }
+.lifeos-root .lifeos-review-layout .lifeos-card { height:auto; min-height:400px; }
+.lifeos-root .lifeos-query-fields { padding-bottom:16px; border-bottom:1px solid var(--background-modifier-border); }
+.lifeos-root .lifeos-query-fields label:first-child { flex-basis:280px; }
+.lifeos-root .lifeos-review-row { border:1px solid var(--lifeos-ink); border-radius:12px; padding:12px; margin:10px 0; }
+.lifeos-root .lifeos-review-title { flex:1; }
+.lifeos-root .lifeos-review-title>button { border:0; padding:0; background:transparent; font-weight:650; }
+.lifeos-root .lifeos-review-row .lifeos-template-actions { gap:8px; }
+.lifeos-root .lifeos-workspace-footer { display:flex; justify-content:space-between; padding:10px 0 0; font-size:12px; color:var(--text-muted); border-color:var(--lifeos-ink); }
+@container (max-width:1100px) {
+ .lifeos-root .lifeos-sidebar { width:155px; }
+ .lifeos-root .lifeos-record-grid { grid-template-columns:minmax(0,1fr); }
+ .lifeos-root .lifeos-record-grid .lifeos-card { min-height:0; }
+ .lifeos-root .lifeos-home-row { flex-wrap:wrap; }
+}
+@container (max-width:800px) {
+ .lifeos-root .lifeos-module-list { grid-template-columns:minmax(0,1fr); }
+ .lifeos-root .lifeos-shortcuts strong { font-size:16px; }
+ .lifeos-root .lifeos-today-summary { gap:12px; flex-wrap:wrap; }
+ .lifeos-root .lifeos-expense { padding-left:12px; }
+}
+@container (max-width:680px) {
+ .lifeos-root .lifeos-app { padding:10px; gap:12px; }
+ .lifeos-root .lifeos-sidebar { width:auto; padding:6px; box-shadow:2px 2px 0 var(--lifeos-ink); }
+ .lifeos-root .lifeos-navigation { gap:4px; }
+ .lifeos-root .lifeos-navigation button { min-height:52px; font-size:11px; padding:6px 2px; }
+ .lifeos-root .lifeos-navigation button:last-child { margin:0; border-top:0; }
+ .lifeos-root .lifeos-header { min-height:100px; padding:18px; }
+ .lifeos-root .lifeos-eyebrow { font-size:12px; }
+ .lifeos-root .lifeos-page { padding:4px 4px 12px 0; }
+ .lifeos-root .lifeos-card { height:340px; }
+ .lifeos-root .lifeos-card-header { margin:0 14px; }
+ .lifeos-root .lifeos-card-header h2 { font-size:21px; }
+ .lifeos-root .lifeos-card-body { padding:14px; }
+ .lifeos-root .lifeos-shortcuts { gap:8px; }
+ .lifeos-root .lifeos-shortcuts button { padding:12px 8px; }
+ .lifeos-root .lifeos-shortcuts small { font-size:11px; }
+ .lifeos-root .lifeos-module-list .lifeos-module-row { gap:8px; }
+ .lifeos-root .lifeos-module-list .lifeos-type-icon { width:36px; height:36px; }
+ .lifeos-root .lifeos-review-row .lifeos-template-actions { width:100%; }
+ .lifeos-root .lifeos-workspace-footer { font-size:10px; }
+}
+
+/* Fill the available pane, while retaining minimum readable card sizes. */
+.lifeos-root .lifeos-page-home .lifeos-page,
+.lifeos-root .lifeos-page-record .lifeos-page { overscroll-behavior:contain; }
+.lifeos-root .lifeos-page-home .lifeos-grid {
+  flex:1 0 auto;
+  min-height:660px;
+  grid-template-rows:minmax(310px,.95fr) minmax(330px,1.05fr);
+}
+.lifeos-root .lifeos-page-home .lifeos-grid>.lifeos-card {
+  height:auto;
+  min-height:0;
+}
+.lifeos-root .lifeos-page-record .lifeos-record-grid {
+  flex:1 0 auto;
+  min-height:620px;
+  grid-template-columns:minmax(0,2.7fr) minmax(260px,1fr);
+}
+.lifeos-root .lifeos-page-record .lifeos-record-grid>.lifeos-card {
+  height:auto;
+  min-height:0;
+}
+.lifeos-root .lifeos-page-record .lifeos-record-grid>.lifeos-card:first-child>.lifeos-card-body {
+  display:flex;
+  flex-direction:column;
+}
+.lifeos-root .lifeos-page-record .lifeos-module-list {
+  flex:1 0 auto;
+  grid-auto-rows:minmax(86px,1fr);
+  gap:clamp(12px,1cqi,20px);
+}
+.lifeos-root .lifeos-page-record .lifeos-module-list .lifeos-module-row {
+  padding:clamp(14px,1.2cqi,24px);
+}
+.lifeos-root .lifeos-page-record .lifeos-module-list .lifeos-module-row p {
+  font-size:clamp(12px,.8cqi,16px);
+  margin-top:5px;
+}
+.lifeos-root .lifeos-page-record .lifeos-module-list .lifeos-module-row strong {
+  font-size:clamp(18px,1cqi,22px);
+}
+.lifeos-root .lifeos-page-record .lifeos-record-method { padding:clamp(24px,2cqi,40px) 0; }
+/* Keep record titles at the left of the row instead of spreading them across a wide card. */
+.lifeos-root .lifeos-home-row>button { justify-content:flex-start; }
+@container (max-width:1100px) {
+  .lifeos-root .lifeos-page-record .lifeos-record-grid {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(600px,1fr) auto;
+    min-height:0;
+  }
+}
+@container (max-width:800px) {
+  .lifeos-root .lifeos-page-home .lifeos-grid {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:none;
+    grid-auto-rows:minmax(300px,auto);
+    min-height:0;
+  }
+  .lifeos-root .lifeos-page-record .lifeos-record-grid {
+    grid-template-rows:auto auto;
+  }
+  .lifeos-root .lifeos-page-record .lifeos-module-list { grid-auto-rows:minmax(86px,auto); }
+  .lifeos-root .lifeos-page-record .lifeos-record-grid>.lifeos-card { overflow:visible; }
+  .lifeos-root .lifeos-page-record .lifeos-record-grid>.lifeos-card>.lifeos-card-body { flex:none; overflow:visible; }
+}
+
+/* Home overview: compact daily actions, a weekly strip, and room for recent records. */
+.lifeos-root .lifeos-page-home .lifeos-grid {
+  grid-template-areas:"today quick" "week week" "ongoing recent";
+  grid-template-rows:minmax(300px,.85fr) 180px minmax(300px,1.15fr);
+  min-height:816px;
+}
+.lifeos-root .lifeos-home-today { grid-area:today; }
+.lifeos-root .lifeos-page-home .lifeos-grid>.lifeos-card:nth-child(2) { grid-area:quick; }
+.lifeos-root .lifeos-home-week { grid-area:week; }
+.lifeos-root .lifeos-home-ongoing { grid-area:ongoing; }
+.lifeos-root .lifeos-home-recent { grid-area:recent; }
+.lifeos-root .lifeos-journal-status { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--background-modifier-border); }
+.lifeos-root .lifeos-week-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-top:12px; }
+.lifeos-root .lifeos-week-metrics>div { display:flex; flex-direction:column; gap:6px; border-left:1px solid var(--background-modifier-border); padding-left:20px; }
+.lifeos-root .lifeos-week-metrics>div:first-child { border-left:0; padding-left:0; }
+.lifeos-root .lifeos-week-metrics strong { font-size:28px; line-height:1.2; }
+.lifeos-root .lifeos-week-metrics small { font-size:12px; font-weight:400; margin-left:6px; color:var(--text-muted); }
+.lifeos-root .lifeos-week-metrics>div:last-child strong { color:var(--lifeos-red); }
+.lifeos-root .lifeos-home-empty { align-self:start; }
+.lifeos-root .lifeos-page-home .lifeos-grid>.lifeos-home-empty { height:auto; }
+.lifeos-root .lifeos-home-empty .lifeos-card-body { flex:none; }
+.lifeos-root .lifeos-home-empty label { display:none; }
+.lifeos-root .lifeos-home-empty .lifeos-card-body>p:not(:last-child):not([role=status]) { display:none; }
+.lifeos-root .lifeos-home-row>button { text-align:left; }
+@container (max-width:800px) {
+ .lifeos-root .lifeos-page-home .lifeos-grid {
+   grid-template-areas:"today" "quick" "week" "ongoing" "recent";
+   grid-template-rows:auto;
+   grid-auto-rows:auto;
+   min-height:0;
+ }
+ .lifeos-root .lifeos-page-home .lifeos-grid>.lifeos-card { min-height:280px; }
+ .lifeos-root .lifeos-page-home .lifeos-grid>.lifeos-home-week { min-height:0; }
+ .lifeos-root .lifeos-page-home .lifeos-grid>.lifeos-home-empty { min-height:0; }
+ .lifeos-root .lifeos-week-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+ .lifeos-root .lifeos-week-metrics>div:nth-child(3) { border-left:0; padding-left:0; }
+}
+
+/* Approved four-panel reference; proportions scale with the LifeOS pane. */
+.lifeos-root .lifeos-page-home {
+  font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif;
+  font-size:clamp(15px,1.35cqi,29px);
+  gap:clamp(12px,1.1cqi,24px);
+}
+.lifeos-root .lifeos-page-home .lifeos-sidebar { width:14.5cqi; min-width:170px; max-width:330px; padding:clamp(20px,1.5cqi,32px) 12px; }
+.lifeos-root .lifeos-page-home .lifeos-brand strong { font-size:clamp(32px,2.7cqi,58px); }
+.lifeos-root .lifeos-page-home .lifeos-brand small { font-size:clamp(13px,1.25cqi,26px); }
+.lifeos-root .lifeos-page-home .lifeos-navigation button { font-size:clamp(17px,1.55cqi,32px); min-height:clamp(56px,4.4cqi,94px); gap:16px; }
+.lifeos-root .lifeos-page-home .lifeos-navigation .lifeos-icon { width:clamp(26px,2cqi,42px); height:clamp(26px,2cqi,42px); }
+.lifeos-root .lifeos-page-home .lifeos-header { flex:0 0 18.5%; min-height:140px; padding:22px 2.2cqi; }
+.lifeos-root .lifeos-page-home .lifeos-header h1 { font-family:inherit; font-size:clamp(48px,4.9cqi,106px); line-height:1.05; }
+.lifeos-root .lifeos-page-home .lifeos-eyebrow { font-size:clamp(16px,1.55cqi,32px); }
+.lifeos-root .lifeos-page-home .lifeos-page { padding:20px 6px 16px 0; }
+.lifeos-root .lifeos-page-home .lifeos-grid {
+  grid-template-areas:"today quick" "ongoing recent";
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:minmax(330px,1.4fr) minmax(240px,1fr);
+  min-height:588px;
+  gap:18px;
+}
+.lifeos-root .lifeos-page-home .lifeos-grid>.lifeos-card { min-height:0; height:auto; align-self:stretch; }
+.lifeos-root .lifeos-page-home .lifeos-card-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 1.8cqi; padding:16px 0 12px; }
+.lifeos-root .lifeos-page-home .lifeos-card-header h2 { font-size:clamp(24px,2.3cqi,48px); white-space:nowrap; }
+.lifeos-root .lifeos-page-home .lifeos-card-caption { font-size:clamp(12px,1.15cqi,24px); color:var(--text-muted); text-align:right; }
+.lifeos-root .lifeos-page-home .lifeos-card-body { padding:18px 1.8cqi; }
+.lifeos-root .lifeos-page-home .lifeos-date { font-size:clamp(48px,5cqi,108px); }
+.lifeos-root .lifeos-page-home .lifeos-today-summary { gap:2cqi; padding-bottom:16px; }
+.lifeos-root .lifeos-page-home .lifeos-expense { padding-left:2.3cqi; }
+.lifeos-root .lifeos-page-home .lifeos-expense strong { font-size:clamp(32px,3.25cqi,68px); }
+.lifeos-root .lifeos-page-home .lifeos-home-today h3 { font-size:inherit; margin:14px 0 4px; font-weight:500; }
+.lifeos-root .lifeos-page-home .lifeos-home-today .lifeos-home-row { border-bottom:0; padding:5px 0; }
+.lifeos-root .lifeos-page-home .lifeos-home-today .lifeos-type-icon { border:2px solid var(--lifeos-ink); border-radius:5px; width:26px; height:26px; }
+.lifeos-root .lifeos-page-home .lifeos-home-today .lifeos-type-icon svg { display:none; }
+.lifeos-root .lifeos-page-home .lifeos-shortcuts { gap:14px; }
+.lifeos-root .lifeos-page-home .lifeos-shortcuts button { padding:22px 1.5cqi 12px; justify-content:space-between; gap:12px; }
+.lifeos-root .lifeos-page-home .lifeos-shortcuts .lifeos-icon { width:clamp(38px,3.4cqi,70px); height:clamp(38px,3.4cqi,70px); }
+.lifeos-root .lifeos-page-home .lifeos-shortcuts strong { font-size:clamp(20px,2cqi,42px); white-space:nowrap; }
+.lifeos-root .lifeos-page-home .lifeos-shortcuts strong::after { content:""; display:block; width:24px; border-top:1px solid currentColor; margin-top:12px; opacity:.6; }
+.lifeos-root .lifeos-page-home .lifeos-shortcuts small { font-size:clamp(14px,1.25cqi,26px); }
+.lifeos-root .lifeos-page-home .lifeos-shortcuts button>span { font-size:clamp(24px,2cqi,40px); }
+.lifeos-root .lifeos-page-home .lifeos-home-row { gap:14px; padding:12px 0; flex-wrap:nowrap; }
+.lifeos-root .lifeos-page-home .lifeos-home-row>button { font:inherit; font-weight:600; display:block; text-align:left; min-width:0; }
+.lifeos-root .lifeos-page-home .lifeos-home-ongoing .lifeos-type-icon { width:12px; height:12px; border-radius:50%; background:var(--lifeos-green); }
+.lifeos-root .lifeos-page-home .lifeos-home-ongoing .lifeos-type-icon svg { display:none; }
+.lifeos-root .lifeos-page-home .lifeos-home-recent .lifeos-type-icon { width:clamp(44px,3.6cqi,76px); height:clamp(44px,3.6cqi,76px); }
+.lifeos-root .lifeos-page-home .lifeos-type-badge { font-size:clamp(12px,1.1cqi,23px); padding:5px 12px; }
+.lifeos-root .lifeos-page-home .lifeos-home-row small { font-size:clamp(12px,1.1cqi,23px); white-space:nowrap; }
+.lifeos-root .lifeos-page-home .lifeos-home-note { display:none; }
+.lifeos-root .lifeos-page-home .lifeos-ongoing-filter select { font-size:clamp(13px,1.1cqi,23px); padding:6px 10px; }
+.lifeos-root .lifeos-visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.lifeos-root .lifeos-page-home .lifeos-workspace-footer { font-size:clamp(12px,1.2cqi,25px); }
+@container (max-width:1100px) {
+ .lifeos-root .lifeos-page-home .lifeos-card-caption { display:none; }
+ .lifeos-root .lifeos-page-home .lifeos-home-row { flex-wrap:wrap; }
+}
+@container (max-width:800px) {
+ .lifeos-root .lifeos-page-home .lifeos-grid { grid-template-areas:"today" "quick" "ongoing" "recent"; grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-auto-rows:minmax(280px,auto); min-height:0; }
+ .lifeos-root .lifeos-page-home .lifeos-header { flex-basis:auto; min-height:120px; }
+ .lifeos-root .lifeos-page-home .lifeos-sidebar { width:155px; min-width:0; }
+ .lifeos-root .lifeos-page-home .lifeos-shortcuts { min-height:200px; }
+ .lifeos-root .lifeos-page-home .lifeos-card-header { margin:0 16px; }
+ .lifeos-root .lifeos-page-home .lifeos-card-body { padding:16px; }
+}
+@container (max-width:680px) {
+ .lifeos-root .lifeos-page-home .lifeos-sidebar { width:auto; }
+ .lifeos-root .lifeos-page-home .lifeos-navigation button { font-size:11px; min-height:52px; gap:2px; }
+ .lifeos-root .lifeos-page-home .lifeos-header h1 { font-size:40px; }
+ .lifeos-root .lifeos-page-home .lifeos-eyebrow { font-size:14px; }
+ .lifeos-root .lifeos-page-home .lifeos-shortcuts strong { font-size:17px; }
+ .lifeos-root .lifeos-page-home .lifeos-shortcuts small { font-size:12px; }
+}
+
+/* Definite flex basis prevents percentage-height shortcuts expanding the grid. */
+.lifeos-root .lifeos-page-home .lifeos-grid {
+  flex:1 0 588px;
+  height:588px;
+  grid-template-rows:minmax(0,1.4fr) minmax(0,1fr);
+}
+.lifeos-root .lifeos-page-home .lifeos-grid>.lifeos-card:nth-child(2)>.lifeos-card-body {
+  display:flex;
+  overflow:auto;
+}
+.lifeos-root .lifeos-page-home .lifeos-shortcuts {
+  flex:1;
+  height:auto;
+  min-height:0;
+  grid-template-rows:minmax(0,1fr);
+}
+.lifeos-root .lifeos-page-home .lifeos-shortcuts button {
+  justify-content:flex-start;
+  min-height:0;
+  overflow:auto;
+  gap:clamp(12px,1.1cqi,22px);
+}
+.lifeos-root .lifeos-page-home .lifeos-shortcuts button>span { margin-top:auto; }
+@container (max-width:800px) {
+ .lifeos-root .lifeos-page-home .lifeos-grid {
+   flex:1 0 auto;
+   height:auto;
+   grid-template-rows:none;
+   grid-auto-rows:300px;
+ }
+ .lifeos-root .lifeos-page-home .lifeos-shortcuts { min-height:0; }
+}

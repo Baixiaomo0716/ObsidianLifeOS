@@ -34,6 +34,13 @@ test("disabled modules hidden from record choices without a fake clickable creat
 test("all modules disabled show real empty preference state", () => {
   const h = harness({ enabledModules: [] }); h.click("记录"); assert.ok(h.html().includes("暂无启用模块"));
 });
+test("review switches tags and records preserving selected module and enabled scope", () => {
+  const h = harness({ enabledModules: ["zhishi", "yuedu"] }); h.click("回看");
+  h.walk(h.render()).find(n => n.type === "select").props.onChange({ target: { value: "zhishi" } });
+  h.walk(h.render()).find(n => n.props.children === "标签浏览").props.onClick();
+  const tags = h.walk(h.render()).find(n => typeof n.type === "function" && n.type.name === "TagPage"); assert.equal(tags.props.type, "zhishi"); assert.equal(tags.props.allowed.join(","), "zhishi,yuedu");
+  h.walk(h.render()).find(n => n.props.children === "记录浏览").props.onClick(); assert.ok(h.html().includes("知识记录"));
+});
 test("record and quick-note buttons call the real creation port, ledger stays disabled", () => {
   const called = [], h = harness({ onCreateNote: (type) => called.push(type) });
   const buttons = h.walk(h.render()).filter((node) => node.type === "button");
@@ -41,6 +48,15 @@ test("record and quick-note buttons call the real creation port, ledger stays di
   h.click("记录"); const recordButtons = h.walk(h.render()).filter((node) => node.type === "button" && node.props.children === "新建笔记");
   assert.equal(recordButtons.length, 9); recordButtons[0].props.onClick(); assert.equal(called[1], "riji");
   assert.equal(h.walk(h.render()).filter((node) => node.type === "button" && node.props.disabled).length, 1);
+});
+
+test("review switches to period page and preserves record module", () => {
+  const h = harness({ enabledModules: ["zhishi"] }); h.click("回看");
+  h.walk(h.render()).find(n => n.type === "select").props.onChange({ target: { value: "zhishi" } });
+  h.walk(h.render()).find(n => n.props.children === "月年度回顾").props.onClick();
+  assert.ok(h.walk(h.render()).some(n => typeof n.type === "function" && n.type.name === "PeriodReviewPage"));
+  assert.equal(h.walk(h.render()).find(n => n.type === "select").props.disabled, true);
+  h.walk(h.render()).find(n => n.props.children === "记录浏览").props.onClick(); assert.ok(h.html().includes("知识记录"));
 });
 test("review selection changes heading and survives navigating away and back", () => {
   const h = harness(); h.click("回看"); const select = h.walk(h.render()).find((node) => node.type === "select");
@@ -56,4 +72,22 @@ test("review renders real query results with opening actions and pagination rath
   const service = { subscribe: () => () => {}, query: () => ({ ready: true, issues: 0, total: 1, page: 1, pages: 1, items: [{ id: "id", type: "zhishi", title: "真实标题", tags: ["笔记"], date: "", path: "a.md", references: [] }] }) };
   const h = harness({ review: { service, open() {} } }); h.click("回看");
   const html = h.html(); assert.ok(html.includes("真实标题")); assert.ok(html.includes("共 1 条记录")); assert.ok(html.includes("查看关联")); assert.ok(html.includes("上一页")); assert.ok(!html.includes("列表查询待接入"));
+});
+
+test("home shows real expense, consistent ongoing count including knowledge and scroll regions", () => {
+  const data = { ready: true, today: "2026-10-12", issues: 0, expense: 1250, tasks: [], recent: [], ongoing: [{ id: "book", type: "yuedu", title: "真实阅读", updated: "2026-10-12T00:00:00Z" }, { id: "knowledge", type: "zhishi", title: "真实知识", updated: "2026-10-12T00:00:00Z" }] };
+  const h = harness({ home: { service: { subscribe: () => () => {}, read: () => data }, open() {} } }), html = h.html(); assert.ok(html.includes("¥12.50")); assert.ok(html.includes("进行中共 2 项；当前显示 2 项")); assert.ok(html.includes("真实知识")); assert.equal((html.match(/lifeos-card-body/g) ?? []).length, 4);
+});
+test("home never converts unavailable or overflowing data to a zero expense", () => {
+  const data = { ready: false, today: "2026-10-12", issues: 0, tasks: [], recent: [], ongoing: [] }, h = harness({ home: { service: { subscribe: () => () => {}, read: () => data }, open() {} } }); assert.ok(h.html().includes("正在读取真实记录")); assert.ok(!h.html().includes("今日支出")); data.ready = true; data.moneyError = "累计金额超出安全范围"; assert.ok(h.html().includes("今日支出无法汇总")); assert.ok(!h.html().includes("¥0.00"));
+});
+
+test("home follows the four-panel reference and retains local readable timestamps", () => {
+  const data = { ready: true, today: "2026-10-12", zone: "Asia/Shanghai", issues: 0, journalEnabled: true, todayJournal: { id: "diary", type: "riji", title: "日记", updated: "2026-10-12T00:30:00Z" }, week: { start: "2026-10-12", journals: 1, tasks: 2, books: 0, expense: 850 }, tasks: [], ongoing: [], recent: [{ id: "diary", type: "riji", title: "日记", updated: "2026-10-12T00:30:00Z" }] };
+  const h = harness({ home: { service: { subscribe: () => () => {}, read: () => data }, open() {} } });
+  const html = h.html();
+  assert.ok(!html.includes("本周概览"));
+  assert.ok(!html.includes("今日日记已记录"));
+  assert.ok(html.includes("今天 08:30")); assert.ok(!html.includes("lifeos-home-empty"));
+  data.todayJournal = undefined; assert.ok(!h.html().includes("今天还未写日记"));
 });

@@ -1,3 +1,19 @@
+import { PeriodReviewService } from "./services/period-review-service";
+import { KnowledgeService } from "./services/knowledge-service";
+import { TravelService } from "./services/travel-service";
+import { PerformanceService } from "./services/performance-service";
+import { GameService } from "./services/game-service";
+import { FilmService } from "./services/film-service";
+import { ReadingService } from "./services/reading-service";
+import { JournalLedgerRelationService } from "./services/journal-ledger-relation-service";
+import { SummaryService } from "./services/summary-service";
+import { ProjectFileService } from "./services/project-file-service";
+import { ProjectLifecycleService, type ProjectAction } from "./services/project-lifecycle-service";
+import { openProjectFlow, openProjectRecovery } from "./ui/project-flow-modal";
+import { ProjectService } from "./services/project-service";
+import { LedgerTableService } from "./services/ledger-table-service";
+import { LedgerService } from "./services/ledger-service";
+import { openLedgerModal } from "./ui/ledger-modal";
 import { Modal, Notice, Plugin, TFile } from "obsidian";
 import { LifeOSView, LIFEOS_VIEW_TYPE } from "./ui/lifeos-view";
 import { LifeOSSettingTab, renderLifeOSSettings } from "./settings/lifeos-setting-tab";
@@ -30,6 +46,11 @@ import { ObsidianBinaryFileSystem } from "./adapters/obsidian/binary-file-system
 import { BrowserBinaryFingerprint } from "./adapters/browser/binary-fingerprint";
 import { AttachmentReferenceService } from "./services/attachment-reference-service";
 import { openAttachmentImportModal } from "./ui/attachment-import-modal";
+import { JournalRelationService } from "./services/journal-relation-service";
+import { JournalContextService } from "./services/journal-context-service";
+import { TaskListService } from "./services/task-list-service";
+import { TaskService } from "./services/task-service";
+import { openTaskModal } from "./ui/task-modal";
 import { JournalService } from "./services/journal-service";
 
 export default class LifeOSPlugin extends Plugin {
@@ -84,9 +105,58 @@ export default class LifeOSPlugin extends Plugin {
     const templates = new TemplateService(files, layout, index, operations, clock, ids, this.activeSettings.shiqu,
       this.activeSettings.qiyongmokuai.filter((type): type is NoteType => type !== "jizhang"));
     const active = (): boolean => this.enabled && generation === this.generation;
+    const tasks = new TaskService(index, templates, operations, clock, ids, active);
+    const reading = new ReadingService(index, operations, clock, ids, active);
+    const film = new FilmService(index, operations, clock, ids, active);
+    const game = new GameService(index, operations, clock, ids, active);
+    const performances = new PerformanceService(index, operations, clock, ids, active);
+    const travel = new TravelService(index, operations, clock, ids, active);
+    const knowledge = new KnowledgeService(index, operations, clock, ids, active);
+    const taskList = new TaskListService(index, clock, this.activeSettings.shiqu);
+    let openingTask = false;
+    const editTask = (id: string): void => {
+      if (!active() || openingTask) return;
+      openingTask = true;
+      void (async () => {
+        await index.rebuild(); const source = index.find(id);
+        if (!source || source.attributes.shiti !== "daiban") throw new Error("请先完善待办字段，回收或争议记录不能操作");
+        if (!active()) return;
+        let dispose: () => void;
+        dispose = openTaskModal(this.app, tasks, source, active, () => this.relationModals.delete(dispose));
+        this.relationModals.add(dispose);
+      })().catch((error: unknown) => { if (active()) new Notice(error instanceof Error ? error.message : String(error)); }).finally(() => { openingTask = false; });
+    };
+    this.addCommand({ id: "edit-task-progress", name: "修改当前待办进度或取消状态", checkCallback: (checking) => {
+      const path = this.app.workspace.getActiveFile()?.path;
+      if (!active() || !path || layout.typeFor(path) !== "daiban" || !layout.isManaged(path) || !this.activeSettings.qiyongmokuai.includes("daiban")) return false;
+      if (!checking) void index.rebuild().then(() => { const source = index.all().find((entry) => entry.path === path); if (source) editTask(String(source.attributes.biaoshi)); else if (active()) new Notice("请先完善待办字段"); }).catch((error: unknown) => { if (active()) new Notice(String(error)); });
+      return true;
+    } });
+    const ledgerEntry = new LedgerService(layout, operations, index, clock, ids, () => this.settingsSnapshot?.shuju ?? this.activeSettings, active);
+    const ledgerTable = new LedgerTableService(index, operations, clock, ids, () => this.settingsSnapshot?.shuju ?? this.activeSettings, active);
+    const createLedger = (): void => {
+      if (!active() || !this.activeSettings.qiyongmokuai.includes("jizhang")) return;
+      let dispose: () => void;
+      dispose = openLedgerModal(this.app, ledgerEntry, active, () => this.relationModals.delete(dispose));
+      this.relationModals.add(dispose);
+    };
+    this.addCommand({ id: "create-ledger", name: "新建记账", callback: createLedger });
     const journals = new JournalService(index, templates, clock, this.activeSettings.shiqu, active, layout.module("riji"));
     const attachments = new AttachmentStore(files, new ObsidianBinaryFileSystem(this.app.vault, active), layout, clock, ids, new BrowserBinaryFingerprint(), this.activeSettings.fujianzuidadaxiao, active);
     const attachmentReferences = new AttachmentReferenceService(index, attachments, operations, ids, active);
+    const projectFiles = new ProjectFileService(index, attachments, attachmentReferences, active);
+    const uploadProjectFiles = (id: string): void => {
+      if (!active() || !this.activeSettings.qiyongmokuai.includes("xiangmu")) return;
+      let dispose: () => void;
+      dispose = openAttachmentImportModal(this.app, id, index, attachments, attachmentReferences, this.activeSettings.fujianzuidadaxiao, active, () => this.relationModals.delete(dispose));
+      this.relationModals.add(dispose);
+    };
+    const openProjectFile = async (path: string): Promise<void> => {
+      if (!active()) throw new Error("插件已停止");
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (!(file instanceof TFile)) throw new Error("附件不存在，请刷新核验");
+      await this.app.workspace.getLeaf(true).openFile(file);
+    };
     let openingAttachments = false;
     this.addCommand({ id: "import-project-attachments", name: "导入附件到当前项目", checkCallback: (checking) => {
       const path = this.app.workspace.getActiveFile()?.path;
@@ -104,7 +174,25 @@ export default class LifeOSPlugin extends Plugin {
       }
       return true;
     } });
+    const projectFlows = new ProjectLifecycleService(files, layout, index, operations, clock, ids, new BrowserFingerprint(), () => active() && this.activeSettings.qiyongmokuai.includes("xiangmu"));
+    const manageProject = (id: string, action?: ProjectAction): void => {
+      if (!active() || !this.activeSettings.qiyongmokuai.includes("xiangmu")) return;
+      void (async () => {
+        await index.rebuild(); const source = index.find(id);
+        if (!source || source.attributes.shiti !== "xiangmu") throw new Error("项目不可用，请核对原文件");
+        if (!active()) return; let dispose: () => void;
+        dispose = openProjectFlow(this.app, projectFlows, source, active, () => this.relationModals.delete(dispose), action);
+        this.relationModals.add(dispose);
+      })().catch((error: unknown) => { if (active()) new Notice(String(error)); });
+    };
+    this.addCommand({ id: "recover-project-flows", name: "恢复项目关闭与管理流程", callback: () => {
+      if (!active()) return; let dispose: () => void;
+      void openProjectRecovery(this.app, projectFlows, active, () => this.relationModals.delete(dispose)).then((close) => { dispose = close; if (active()) this.relationModals.add(dispose); else dispose(); }).catch((error: unknown) => { if (active()) new Notice(String(error)); });
+    } });
+    const projects = new ProjectService(index, operations, clock, ids, active);
     const search = new SearchService(index, this.activeSettings.shiqu), relations = new RelationService(index, operations, ids, active);
+    const journalCreation = new JournalRelationService(index, templates, relations, active, this.activeSettings.qiyongmokuai.filter((type): type is NoteType => type !== "jizhang"));
+    const journalContext = new JournalContextService(index, search, this.activeSettings.shiqu, this.activeSettings.qiyongmokuai);
     let openingRelations = false;
     const editRelations = (id: string): void => {
       if (!active() || openingRelations) return;
@@ -115,7 +203,7 @@ export default class LifeOSPlugin extends Plugin {
         if (!source || !["riji", "daiban"].includes(String(source.attributes.shiti))) throw new Error("请选择有效的日记或待办");
         if (!active()) return;
         let dispose: () => void;
-        dispose = openRelationModal(this.app, { source, search, service: relations, allowed: this.activeSettings.qiyongmokuai, active }, () => this.relationModals.delete(dispose));
+        dispose = openRelationModal(this.app, { source, search, service: relations, allowed: this.activeSettings.qiyongmokuai, active, ...(source.attributes.shiti === "riji" ? { creation: journalCreation, ...(this.activeSettings.qiyongmokuai.includes("jizhang") ? { ledgerCreation: new JournalLedgerRelationService(index, ledgerEntry, relations, active) } : {}) } : {}) }, () => this.relationModals.delete(dispose));
         this.relationModals.add(dispose);
       })().catch((error: unknown) => { if (active()) new Notice(error instanceof Error ? error.message : String(error)); }).finally(() => { openingRelations = false; });
     };
@@ -130,6 +218,7 @@ export default class LifeOSPlugin extends Plugin {
     const refreshing = (): void => { currentNotePath(); for (const leaf of this.app.workspace.getLeavesOfType(VALIDATION_VIEW_TYPE)) if (leaf.view instanceof ValidationView) void leaf.view.refresh(); };
     this.registerView(VALIDATION_VIEW_TYPE, (leaf) => new ValidationView(leaf, currentNotePath, (path) => notes.read(path), active, async (snapshot, next) => {
       if (!active() || !snapshot.validation.ok) throw new Error("笔记尚未可用");
+      if (snapshot.attributes.shiti === "xiangmu" && (next === "yiwancheng" || snapshot.attributes.jindu === "yiwancheng")) { manageProject(String(snapshot.attributes.biaoshi), next === "yiwancheng" ? "wancheng" : "chongkai"); return; }
       const changed = changeProgress(snapshot.validation.value, next, clock.now());
       const field = jinduZiduan(changed.shiti);
       if (!field) throw new Error("此笔记不使用进度");
@@ -303,34 +392,64 @@ export default class LifeOSPlugin extends Plugin {
         return true;
       },
     });
+    const openRecord = (id: string): void => {
+      if (!active()) return;
+      const record = index.find(id);
+      if (!record) { new Notice("记录不存在、已回收或存在争议。"); return; }
+      if (record.attributes.shiti === "jizhang") {
+        const modal = new Modal(this.app); modal.contentEl.createEl("h2", { text: "记账记录（只读）" });
+        for (const [key, value] of Object.entries(record.attributes)) {
+          if (["biaoshi", "jiegoubanben", "shiti"].includes(key)) continue;
+          const display = key === "jine" ? `¥${(Number(value) / 100).toFixed(2)}` : key === "shouzhi" ? (value === "shouru" ? "收入" : "支出") : Array.isArray(value) ? value.join("、") : String(value);
+          modal.contentEl.createEl("p", { text: `${fieldNames[key] ?? key}：${display}` });
+        }
+        modal.open(); return;
+      }
+      const file = this.app.vault.getAbstractFileByPath(record.path);
+      if (file instanceof TFile) void this.app.workspace.getLeaf(true).openFile(file).catch((error: unknown) => { if (active()) new Notice(`打开失败：${String(error)}`); });
+    };
+    this.addCommand({ id: "inspect-layout", name: "检查当前工作台布局", callback: () => {
+      if (!active()) return;
+      try {
+        const view = this.app.workspace.getLeavesOfType(LIFEOS_VIEW_TYPE).map((leaf) => leaf.view).find((view) => view instanceof LifeOSView);
+        if (!(view instanceof LifeOSView)) throw new Error("请先打开LifeOS页面再检查");
+        const text = view.inspectLayout(), modal = new Modal(this.app); let closed = false;
+        const dispose = () => modal.close(); this.relationModals.add(dispose);
+        modal.onClose = () => { if (!closed) { closed = true; this.relationModals.delete(dispose); } };
+        modal.contentEl.createEl("h2", { text: "当前工作台布局检查" });
+        modal.contentEl.createEl("pre", { cls: "lifeos-layout-report", text }); modal.open();
+      } catch (error) { if (active()) new Notice(error instanceof Error ? error.message : String(error)); }
+    } });
     this.registerView(LIFEOS_VIEW_TYPE, (leaf) =>
       new LifeOSView(leaf, () => this.enabled && generation === this.generation, {
+        home: { service: new SummaryService(index, clock, this.activeSettings.shiqu, this.activeSettings.qiyongmokuai), open: openRecord },
         enabledModules: this.activeSettings.qiyongmokuai,
         renderSettings: (body, footer) => renderLifeOSSettings(body, this, footer),
         onCreateNote: createNote,
-        ...(this.activeSettings.qiyongmokuai.includes("riji") ? { journal: { service: journals, openPath: async (path: string) => {
+        ...(this.activeSettings.qiyongmokuai.includes("xiangmu") ? { projects: { service: projects, files: { service: projectFiles, upload: uploadProjectFiles, open: openProjectFile, active }, create: () => createNote("xiangmu"), open: openRecord, relations: editRelations, manage: manageProject, active } } : {}),
+        onCreateLedger: createLedger,
+        ...(this.activeSettings.qiyongmokuai.includes("jizhang") ? { ledger: { table: ledgerTable, entry: ledgerEntry, create: createLedger, active, download: (format: "csv" | "json", text: string) => {
+          if (!active()) return;
+          const url = URL.createObjectURL(new Blob([text], { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json;charset=utf-8" }));
+          const link = document.createElement("a"); link.href = url; link.download = `LifeOS-记账.${format}`;
+          document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } } } : {}),
+        ...(this.activeSettings.qiyongmokuai.includes("zhishi") ? { knowledge: { service: knowledge, create: () => createNote("zhishi"), open: openRecord } } : {}),
+        ...(this.activeSettings.qiyongmokuai.includes("lvxing") ? { travel: { service: travel, create: () => createNote("lvxing"), open: openRecord } } : {}),
+        ...(this.activeSettings.qiyongmokuai.includes("yanchu") ? { performances: { service: performances, create: () => createNote("yanchu"), open: openRecord } } : {}),
+        ...(this.activeSettings.qiyongmokuai.includes("youxi") ? { game: { service: game, create: () => createNote("youxi"), open: openRecord } } : {}),
+        ...(this.activeSettings.qiyongmokuai.includes("yingshi") ? { film: { service: film, create: () => createNote("yingshi"), open: openRecord } } : {}),
+        ...(this.activeSettings.qiyongmokuai.includes("yuedu") ? { reading: { service: reading, create: () => createNote("yuedu"), open: openRecord } } : {}),
+        ...(this.activeSettings.qiyongmokuai.includes("daiban") ? { tasks: { list: taskList, service: tasks, create: () => createNote("daiban"), open: openRecord, progress: editTask, relations: editRelations } } : {}),
+        ...(this.activeSettings.qiyongmokuai.includes("riji") ? { journal: { service: journals, relations: { service: journalContext, open: openRecord, edit: editRelations }, openPath: async (path: string) => {
           if (!active()) throw new Error("插件已停止");
           if (!layout.isManaged(path) || layout.typeFor(path) !== "riji") throw new Error("日记路径无效");
           const file = this.app.vault.getAbstractFileByPath(path);
           if (!(file instanceof TFile)) throw new Error("日记文件不存在或尚未同步");
           await this.app.workspace.getLeaf(true).openFile(file);
         } } } : {}),
-        review: { service: search, editRelations, open: (id) => {
-          if (!active()) return;
-          const record = index.find(id);
-          if (!record) { new Notice("记录不存在、已回收或存在争议。"); return; }
-          if (record.attributes.shiti === "jizhang") {
-            const modal = new Modal(this.app); modal.contentEl.createEl("h2", { text: "记账记录（只读）" });
-            for (const [key, value] of Object.entries(record.attributes)) {
-              if (["biaoshi", "jiegoubanben", "shiti"].includes(key)) continue;
-              const display = key === "jine" ? `¥${(Number(value) / 100).toFixed(2)}` : key === "shouzhi" ? (value === "shouru" ? "收入" : "支出") : Array.isArray(value) ? value.join("、") : String(value);
-              modal.contentEl.createEl("p", { text: `${fieldNames[key] ?? key}：${display}` });
-            }
-            modal.open(); return;
-          }
-          const file = this.app.vault.getAbstractFileByPath(record.path);
-          if (file instanceof TFile) void this.app.workspace.getLeaf(true).openFile(file).catch((error: unknown) => { if (active()) new Notice(`打开失败：${String(error)}`); });
-        } },
+        review: { service: search, editRelations, open: openRecord },
+        periodReview: { service: new PeriodReviewService(index, clock, this.activeSettings.shiqu, this.activeSettings.qiyongmokuai), open: openRecord },
       }),
     );
     this.addCommand({

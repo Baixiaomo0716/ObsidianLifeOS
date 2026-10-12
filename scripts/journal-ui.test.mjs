@@ -33,3 +33,25 @@ test("duplicate dates show original-file inspection and disable creation", () =>
   const f = fixture({ blocked: true }); assert.ok(f.html().includes("该日需要核对")); assert.ok(f.html().includes("原日记.md")); assert.ok(f.html().includes("重复日记.md"));
   assert.equal(f.nodes().some((n) => n.props.children === "创建并打开日记"), false); assert.equal(f.stats().writes, 0);
 });
+
+
+const relationsBundle = await esbuild.build({ entryPoints: ["src/ui/JournalRelations.tsx"], bundle: true, platform: "browser", format: "cjs", write: false, external: ["react", "react/jsx-runtime"] });
+const relationsModule = { exports: {} }; vm.runInNewContext(relationsBundle.outputFiles[0].text, { module: relationsModule, exports: relationsModule.exports, require });
+test("journal sections distinguish explicit references, open targets and edit only valid source", () => {
+  let opened, edited;
+  const data = { ready: true, totals: { shouru: 0, zhichu: 1250, jieyu: -1250 }, automatic: [{ id: "row", title: "餐饮", type: "jizhang", reasons: ["当天收支"], explicit: true }], explicit: [{ id: "row", title: "餐饮", type: "jizhang" }, { id: "missing" }] };
+  const port = { service: { read: () => data }, open: (id) => opened = id, edit: (id) => edited = id };
+  const tree = relationsModule.exports.JournalRelations({ date: "2026-10-09", sourceId: "journal", port });
+  const walk = (n) => !n || typeof n !== "object" ? [] : [n, ...React.Children.toArray(n.props?.children).flatMap(walk)];
+  const nodes = walk(tree), html = renderToStaticMarkup(tree);
+  assert.ok(html.includes("当天自动汇总")); assert.ok(html.includes("显式关联记录")); assert.ok(html.includes("12.50")); assert.ok(html.includes("关联目标暂不可用：missing"));
+  nodes.find((n) => n.type === "button" && n.props.children === "选择关联 / 新建并返回").props.onClick(); assert.equal(edited, "journal");
+  nodes.find((n) => n.type === "button" && n.props.children !== "选择关联 / 新建并返回").props.onClick(); assert.equal(opened, "row");
+  assert.equal(renderToStaticMarkup(relationsModule.exports.JournalRelations({ date: "2026-10-09", port })).includes("选择关联 / 新建并返回"), false);
+});
+test("overflow and not-ready never present a misleading zero summary", () => {
+  const render = (data) => renderToStaticMarkup(relationsModule.exports.JournalRelations({ date: "2026-10-09", port: { service: { read: () => data } } }));
+  assert.ok(render({ ready: false }).includes("正在读取"));
+  const html = render({ ready: true, moneyError: "累计金额超出安全范围", automatic: [], explicit: [] });
+  assert.ok(html.includes('role="alert"')); assert.equal(html.includes("收入 ¥0.00"), false);
+});

@@ -24,3 +24,11 @@
 | 独立物理存储备份 | 目标尚未配置 |
 
 后续按[Git方案](../git-vault-sync.md)逐项记录；用户暂缓手机不等于同步或移动支持通过。
+
+## 2026-10-12 DEV-031桌面补证
+
+合成真实文件恢复通过：源tests/local-vault/DEV-031-source-ROxAXx，库外快照tests/local-backups/DEV-031-lmef38（snapshot-manifest.json），空目录恢复tests/local-vault/DEV-031-restored-lpRkzJ。十类记录、附件和日志14个文件摘要一致；10条有效记录、0项问题，支出1250分，引用/项目比例/正文/附件及已完成回执不重放已核对，源未改。原报告tests/local-vault/DEV-031-restore-latest.json；重跑会更新该指针，各次独立目录保留。
+
+本地Git试验通过：tests/local-vault/DEV-031-git-zvB8VY/report.json，Git2.55.0.windows.5；两个独立工作区离线新增2笔账本合并后12条有效、3750分，附件摘要一致。同文件冲突双方提交保留，未解决文件退出正常索引，业务有效11条且金额不变。合成冲突工作区未自动解决。此为本地bare远端，未访问Gitee，未包含手机或外部同步App。
+
+此前“关系与索引重建统计尚未实现”已由此合成检查补齐；真实Obsidian恢复重读、Git远程/手机、异盘备份仍未执行。性能存在未达标项，见docs/performance.md。P0/P1不标记全阶段验收通过。

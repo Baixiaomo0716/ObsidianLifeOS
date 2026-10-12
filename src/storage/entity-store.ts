@@ -9,6 +9,7 @@ import type { ChangePlan } from "../ports/change-plan";
 import { JsonCodec, MarkdownCodec, type Codec } from "./codecs";
 import { cloneData, dataObject, hasOwn, sameData } from "./data-values";
 import { StorageLayout } from "./paths";
+import { freshIdentity } from "./identity-cache";
 
 // All stores sharing a FileSystem share one local mutation queue, including creates.
 // The queue is not a cross-device lock and is not persisted as operation history.
@@ -41,25 +42,28 @@ export class SafeEntityStore implements EntityStore {
     validation.warnings.push(...warnings);
     return { path, version: { path, original: raw }, attributes: decoded.attributes, body: decoded.body, validation };
   }
-  // Scan authoritative text rather than stale metadata. DEV-010 may optimize this
-  // only if it maintains the same duplicate/conflict safety guarantees.
+  // Read fresh authoritative text in bounded batches; reuse decoding only for exact text.
   private async assertUnique(id: unknown, ownPath: string, strict: boolean): Promise<Issue[]> {
     const warnings: Issue[] = [];
     if (typeof id !== "string" || !uuidV4.test(id)) return warnings;
-    for (const path of await this.fs.list()) {
-      if (path === ownPath || !this.layout.isManaged(path)) continue;
-      try {
-        const raw = await this.fs.read(path);
-        const codec = this.layout.typeFor(path) === "jizhang" ? new JsonCodec() : new MarkdownCodec();
-        const data = codec.decode(raw).attributes;
-        if (typeof data.biaoshi === "string" && data.biaoshi.toLowerCase() === id.toLowerCase()) throw new StoreError("duplicate_id", "标识重复，争议文件只读，请修复后重试", ownPath, { lujing: [ownPath, path] });
-      } catch (error) {
-        if (error instanceof StoreError && error.code === "duplicate_id") throw error;
-        if (error instanceof StoreError && error.code === "inactive") throw error;
-        if (strict && error instanceof StoreError && error.code === "not_found") throw new StoreError("conflict", "检查期间文件集合已变化，请重新加载后重试", path, error);
-        if (strict && (!(error instanceof StoreError) || error.code === "io")) throw new StoreError("io", "检查管理文件时读取失败，暂停写入", path, error);
-        if (strict) throw new StoreError("invalid_format", "管理范围内存在不可检查的文件，暂停写入以保护标识完整性", path, error);
-        warnings.push({ field: "biaoshi", message: `无法检查文件标识：${path}` });
+    const paths = (await this.fs.list()).filter((path) => path !== ownPath && this.layout.isManaged(path));
+    for (let offset = 0; offset < paths.length; offset += 50) {
+      const batch = paths.slice(offset, offset + 50);
+      const results = await Promise.allSettled(batch.map((path) => this.fs.read(path)));
+      for (const [position, path] of batch.entries()) {
+        try {
+          const result = results[position]!;
+          if (result.status === "rejected") throw result.reason;
+          const identity = freshIdentity(this.fs, path, result.value, this.layout.typeFor(path) === "jizhang" ? "ledger" : "note");
+          if (typeof identity === "string" && identity.toLowerCase() === id.toLowerCase()) throw new StoreError("duplicate_id", "标识重复，争议文件只读，请修复后重试", ownPath, { lujing: [ownPath, path] });
+        } catch (error) {
+          if (error instanceof StoreError && error.code === "duplicate_id") throw error;
+          if (error instanceof StoreError && error.code === "inactive") throw error;
+          if (strict && error instanceof StoreError && error.code === "not_found") throw new StoreError("conflict", "检查期间文件集合已变化，请重新加载后重试", path, error);
+          if (strict && (!(error instanceof StoreError) || error.code === "io")) throw new StoreError("io", "检查管理文件时读取失败，暂停写入", path, error);
+          if (strict) throw new StoreError("invalid_format", "管理范围内存在不可检查的文件，暂停写入以保护标识完整性", path, error);
+          warnings.push({ field: "biaoshi", message: `无法检查文件标识：${path}` });
+        }
       }
     }
     return warnings;
