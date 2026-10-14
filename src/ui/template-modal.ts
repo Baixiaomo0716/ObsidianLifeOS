@@ -1,18 +1,20 @@
 import { Modal, Notice, TFile, type App } from "obsidian";
 import { TemplateService, type NoteDraft } from "../services/template-service";
 import { noteLabels, type NoteType } from "../services/note-templates";
+import { modalHeader, styleLifeOSModal } from "./modal-style";
 export function openTemplateModal(app: App, service: TemplateService, type: NoteType, active: () => boolean): void {
   const modal = new Modal(app), content = modal.contentEl;
   let closed = false;
   modal.onClose = () => { closed = true; };
-  content.createEl("h2", { text: `新建${noteLabels[type]}` });
-  content.createEl("p", { text: "创建后在笔记属性中继续填写。长文本可在源模式编辑；进度列表填写一个状态。" });
-  const label = content.createEl("label", { text: type === "riji" ? "日记日期" : "笔记标题" });
+  styleLifeOSModal(modal, "template");
+  modalHeader(modal, `新建${noteLabels[type]}`, type === "riji" ? "为今天留下一点痕迹" : "把值得记录的生活留下来", type === "riji" ? "book-open" : "file-text");
+  const label = content.createEl("label", { text: type === "riji" ? "日记日期" : "笔记标题", cls: "lifeos-modal-field lifeos-modal-inline-field" });
   const input = label.createEl("input", { type: type === "riji" ? "date" : "text" });
   input.classList.add("lifeos-template-input");
   if (type === "riji") { try { input.value = service.today(); } catch (error) { new Notice(String(error)); return; } }
   else input.maxLength = 240;
-  const message = content.createEl("p", { attr: { role: "status", "aria-live": "polite" } });
+  content.createEl("p", { cls: "lifeos-modal-hint", text: type === "riji" ? "创建后可在笔记中继续填写生活与想法。" : "创建后可在笔记属性和正文中继续填写。" });
+  const message = content.createEl("p", { cls: "lifeos-modal-status", attr: { role: "status", "aria-live": "polite" } });
   const actions = content.createDiv({ cls: "lifeos-template-actions" });
   const cancel = actions.createEl("button", { text: "取消" }); cancel.addEventListener("click", () => modal.close());
   const button = actions.createEl("button", { text: "创建并打开笔记", cls: "mod-cta" });

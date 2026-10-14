@@ -16,8 +16,8 @@ function fixture() {
 }
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 test("cancel performs no writes; changing kind selects matching category", () => {
-  const f = fixture(); f.nodes().find((n) => n.type === "select").props.onChange({ target: { value: "shouru" } });
-  assert.equal(f.nodes().filter((n) => n.type === "select")[1].props.value, "工资"); f.nodes().find((n) => n.props.children === "取消").props.onClick(); assert.equal(f.stats().prepares, 0);
+  const f = fixture(); f.nodes().find((n) => n.props["data-kind"] === "shouru").props.onClick();
+  assert.equal(f.nodes().find((n) => n.type === "select").props.value, "工资"); f.nodes().find((n) => n.props.children === "取消").props.onClick(); assert.equal(f.stats().prepares, 0);
 });
 test("double click and retry lock original values and preserve one request", async () => {
   const f = fixture(), button = f.nodes().find((n) => n.props.children === "保存记账"); button.props.onClick(); button.props.onClick(); await flush();

@@ -11,6 +11,18 @@ class Files {
   async process(path, change) { const next = change(await this.read(path)); this.files.set(path, next); return next; }
 }
 const setup = () => { const fs = new Files(); return { fs, store: new x.SettingsStore(fs) }; };
+
+test("new income and expense categories remain available after repeated saves and plugin reload", async () => {
+  const { fs, store } = setup();
+  let snapshot = await store.read();
+  const added = [{ shouzhi: "shouru", fenlei: "工资", qiyong: true }, { shouzhi: "zhichu", fenlei: "宠物", qiyong: true }];
+  snapshot = await store.save(snapshot, { fenlei: [...snapshot.shuju.fenlei, ...added] });
+  assert.ok(x.activeCategories(snapshot.shuju, "shouru").includes("工资"));
+  assert.ok(x.activeCategories(snapshot.shuju, "zhichu").includes("宠物"));
+  await store.save(snapshot, { fenlei: snapshot.shuju.fenlei, shiqu: "UTC" });
+  const reloaded = await new x.SettingsStore(fs).read();
+  assert.deepEqual(reloaded.shuju.fenlei.slice(-2), added);
+});
 test("missing settings use fresh defaults without writes", async () => {
   const { fs, store } = setup(), one = await store.read(); assert.equal(one.yuanwen, null); assert.equal(fs.files.size, 0);
   one.shuju.mulu.riji = "改变"; assert.equal((await store.read()).shuju.mulu.riji, "10_日记");

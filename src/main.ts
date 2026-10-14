@@ -1,3 +1,4 @@
+import { InspirationService } from "./services/inspiration-service";
 import { PeriodReviewService } from "./services/period-review-service";
 import { KnowledgeService } from "./services/knowledge-service";
 import { TravelService } from "./services/travel-service";
@@ -71,7 +72,7 @@ export default class LifeOSPlugin extends Plugin {
     const saved = await this.settingsStore.save(this.settingsSnapshot, patch);
     if (!this.enabled || generation !== this.generation) return;
     this.settingsSnapshot = saved;
-    new Notice("设置已保存。请重新加载 Obsidian 生效；目录变化不会移动已有文件。", 12000);
+    new Notice("设置已保存。收支分类已生效，重新打开记账即可选择；其他设置需重新加载插件。", 12000);
   }
 
   override async onload(): Promise<void> {
@@ -134,11 +135,22 @@ export default class LifeOSPlugin extends Plugin {
     } });
     const ledgerEntry = new LedgerService(layout, operations, index, clock, ids, () => this.settingsSnapshot?.shuju ?? this.activeSettings, active);
     const ledgerTable = new LedgerTableService(index, operations, clock, ids, () => this.settingsSnapshot?.shuju ?? this.activeSettings, active);
+    let openingLedger = false;
     const createLedger = (): void => {
-      if (!active() || !this.activeSettings.qiyongmokuai.includes("jizhang")) return;
-      let dispose: () => void;
-      dispose = openLedgerModal(this.app, ledgerEntry, active, () => this.relationModals.delete(dispose));
-      this.relationModals.add(dispose);
+      if (!active() || !this.activeSettings.qiyongmokuai.includes("jizhang") || openingLedger) return;
+      openingLedger = true;
+      void (async () => {
+        // Read the vault file again so an already-open workspace uses categories
+        // saved from either settings screen or an external editor.
+        const fresh = await settingsStore.read();
+        if (!active()) return;
+        this.settingsSnapshot = fresh;
+        let dispose: () => void;
+        dispose = openLedgerModal(this.app, ledgerEntry, active, () => this.relationModals.delete(dispose));
+        this.relationModals.add(dispose);
+      })().catch((error: unknown) => {
+        if (active()) new Notice(`无法读取最新收支分类：${error instanceof Error ? error.message : String(error)}`, 12000);
+      }).finally(() => { openingLedger = false; });
     };
     this.addCommand({ id: "create-ledger", name: "新建记账", callback: createLedger });
     const journals = new JournalService(index, templates, clock, this.activeSettings.shiqu, active, layout.module("riji"));
@@ -314,7 +326,7 @@ export default class LifeOSPlugin extends Plugin {
       if (!active() || !this.activeSettings.qiyongmokuai.includes(type)) return false;
       if (!checking) createNote(type); return true;
     } });
-    this.addCommand({ id: "install-note-templates", name: "安装九类笔记模板（保留已有）", callback: () => {
+    this.addCommand({ id: "install-note-templates", name: "安装或更新九类笔记模板（保留自定义）", callback: () => {
       void templates.install().then((results) => {
         if (!active()) return;
         const modal = new Modal(this.app); modal.contentEl.createEl("h2", { text: "模板安装结果" });
@@ -330,7 +342,16 @@ export default class LifeOSPlugin extends Plugin {
     this.addCommand({ id: "rebuild-index", name: "重建索引并查看结果", callback: () => {
       void index.rebuild().then(() => { if (this.enabled && generation === this.generation) new Notice(`索引已重建：${index.all().length}条有效记录，${index.issues().length}项问题。`, 10000); }).catch(notifyIndexFailure);
     } });
-    this.app.workspace.onLayoutReady(() => { if (this.enabled && generation === this.generation) void index.rebuild().catch(notifyIndexFailure); });
+    this.app.workspace.onLayoutReady(() => {
+      if (!active()) return;
+      void (async () => {
+        const results = await templates.install();
+        if (!active()) return;
+        const failures = results.filter(result => result.jieguo.startsWith("未确认"));
+        if (failures.length) new Notice(`有 ${failures.length} 个模板未确认安装，可运行「安装或更新九类笔记模板」查看详情。`, 12000);
+        await index.rebuild();
+      })().catch(notifyIndexFailure);
+    });
     const integrity = new IntegrityCheck(index, files), trash = new TrashStore(index, clock);
     let inspecting = false, recycling = false;
     this.addCommand({ id: "open-trash", name: "查看回收记录", callback: () => {
@@ -422,6 +443,7 @@ export default class LifeOSPlugin extends Plugin {
     } });
     this.registerView(LIFEOS_VIEW_TYPE, (leaf) =>
       new LifeOSView(leaf, () => this.enabled && generation === this.generation, {
+        ...(this.activeSettings.qiyongmokuai.includes("zhishi") ? { inspiration: { service: new InspirationService(index, templates, knowledge), open: openRecord } } : {}),
         home: { service: new SummaryService(index, clock, this.activeSettings.shiqu, this.activeSettings.qiyongmokuai), open: openRecord },
         enabledModules: this.activeSettings.qiyongmokuai,
         renderSettings: (body, footer) => renderLifeOSSettings(body, this, footer),

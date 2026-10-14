@@ -14,3 +14,8 @@
 # Local assistant memory
 /.workbuddy/
 /releases/
+
+# Local browser preview caches and compiled preview pages
+/output/**/edge-profile/
+/output/**/render-*/
+/output/**/*.html

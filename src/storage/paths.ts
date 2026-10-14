@@ -44,6 +44,10 @@ export class StorageLayout {
       const relative = path.slice(prefix.length);
       if (type === "jizhang") {
         if (!/^shuju\/[0-9a-f-]+\.json$/.test(relative) || !uuidV4.test(relative.slice(6, -5))) throw new StoreError("path", "记账只能保存为shuju下的UUID.json", path);
+      } else if (type === "xiangmu") {
+        const parts = relative.split("/");
+        if (!(parts.length === 1 && parts[0]!.endsWith(".md") || parts.length === 2 && parts[1] === `${parts[0]}.md`))
+          throw new StoreError("path", "项目只识别项目目录中的同名笔记或旧版根目录项目笔记", path);
       } else if (!relative.endsWith(".md")) throw new StoreError("path", "笔记只能使用.md文件", path);
       return type;
     }

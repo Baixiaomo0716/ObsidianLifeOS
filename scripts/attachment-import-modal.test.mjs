@@ -9,7 +9,7 @@ function fixture() {
   class Modal { constructor() { modal = this; this.contentEl = new Element("div"); } open() {} close() { this.onClose(); } }
   const module = { exports: {} }; vm.runInNewContext(built.outputFiles[0].text, { module, exports: module.exports, require: () => ({ Modal, Notice: class { constructor(message) { notices.push(message); } } }) });
   const store = { prepare: async (file) => { prepares++; return { info: { 路径: `附件/${file.name}` } }; }, execute: async (draft) => { copies++; if (draft.info.路径.includes("bad") && copies === 1) throw Error("copy failed"); return draft.info; } };
-  const index = { rebuild: async () => {}, find: () => ({ attributes: { shangchuanwenjian: [] } }) };
+  const index = { rebuild: async () => {}, find: () => ({ path: "LifeOS/82_项目/测试项目/测试项目.md", attributes: { shangchuanwenjian: [] } }) };
   const references = { prepare: async (_, paths) => ({ paths }), execute: async (draft) => { associations++; attempted.push(draft); } };
   const dispose = module.exports.openAttachmentImportModal({}, "project", index, store, references, 1024, () => ownerActive, () => closed++);
   const walk = (node) => [node, ...node.children.flatMap(walk)], nodes = () => walk(modal.contentEl);

@@ -27,6 +27,19 @@ test("real copies with same original name keep extensions and distinct paths; me
   assert.equal(a.名称, "文档.pdf"); assert.equal(a.字节数, 3); assert.equal(a.类型, "application/pdf"); assert.equal(a.导入时间, now);
   assert.deepEqual(await f.store.read(a.标识), a); assert.deepEqual(await f.store.verifyPath(a.路径), a); assert.equal(f.creates(), 2);
 });
+test("new project imports stay inside its folder while legacy attachments remain readable", async () => {
+  const f = fixture(), folder = "LifeOS/82_项目/新项目";
+  const draft = await f.store.prepare(file("计划.pdf"), id(1), undefined, folder);
+  const info = await f.store.execute(draft);
+  assert.ok(info.路径.startsWith(`${folder}/`));
+  assert.equal(info.目录, folder);
+  assert.deepEqual(await f.makeStore().verifyPath(info.路径), info);
+  assert.equal(f.bytes.has(info.路径), true);
+  await assert.rejects(f.store.prepare(file(), id(1), undefined, "LifeOS/82_项目/其他/深层"));
+  const legacy = await f.store.execute(await f.store.prepare(file(), id(1)));
+  assert.ok(legacy.路径.startsWith("LifeOS/90_附件/项目/"));
+  assert.deepEqual(await f.makeStore().verifyPath(legacy.路径), legacy);
+});
 test("size limits reject before loading; actual size mismatch and path traversal write nothing", async () => {
   const f = fixture(); let loaded = 0;
   await assert.rejects(f.store.prepare({ ...file(), size: 11, arrayBuffer: async () => { loaded++; return buffer(); } }, id(1))); assert.equal(loaded, 0);

@@ -34,7 +34,7 @@ export function renderLifeOSSettings(containerEl: HTMLElement, lifeOS: LifeOSPlu
       .addButton((button) => button.setButtonText("打开 LifeOS").onClick(() => lifeOS.requestOpen()));
     const hint = containerEl.ownerDocument.createElement("p");
     hint.className = "lifeos-settings-hint";
-    hint.textContent = `配置保存于 ${settingsPath}。保存后重新加载生效；未保存离开会放弃修改。更改目录不搬迁文件，停用模块或分类保留历史数据。`;
+    hint.textContent = `配置保存于 ${settingsPath}。收支分类保存后立即用于新记账；其他设置需重新加载插件。未保存离开会放弃修改。停用分类保留历史数据。`;
     containerEl.appendChild(hint);
     const snapshot = lifeOS.settingsSnapshot;
     if (!snapshot) {
@@ -62,18 +62,26 @@ export function renderLifeOSSettings(containerEl: HTMLElement, lifeOS: LifeOSPlu
       .setDesc("名称修改仅影响新记录选项；关闭开关即可停用，不改历史账本。")
       .addText((text) => text.setValue(category.fenlei).onChange((value) => { category.fenlei = value; }))
       .addToggle((toggle) => toggle.setValue(category.qiyong).onChange((value) => { category.qiyong = value; }));
-    let newIncome = "", newExpense = "";
-    new Setting(containerEl).setName("添加收入分类").addText((text) => text.onChange((value) => { newIncome = value; }));
-    new Setting(containerEl).setName("添加支出分类").addText((text) => text.onChange((value) => { newExpense = value; }));
-    new Setting(footer ?? containerEl).setName("保存设置").setDesc("修改只在点击保存后写入，重新加载插件后生效。")
+    let readIncome = () => "", readExpense = () => "";
+    new Setting(containerEl).setName("添加收入分类").addText((text) => { readIncome = () => text.getValue(); });
+    new Setting(containerEl).setName("添加支出分类").addText((text) => { readExpense = () => text.getValue(); });
+    const status = containerEl.ownerDocument.createElement("p");
+    status.setAttribute("role", "status");
+    (footer ?? containerEl).appendChild(status);
+    new Setting(footer ?? containerEl).setName("保存设置").setDesc("保存后新增分类会列在上方，重新打开记账即可选择，无需重启。")
       .addButton((button) => button.setButtonText("保存").onClick(() => {
         if (!/^\d+$/.test(size)) { new Notice("附件大小请输入正整数字节数。"); return; }
         const edited = cloneData(draft); edited.fujianzuidadaxiao = Number(size);
-        for (const [kind, name] of [["shouru", newIncome], ["zhichu", newExpense]] as const) if (name.trim()) edited.fenlei.push({ shouzhi: kind, fenlei: name.trim(), qiyong: true });
+        for (const [kind, name] of [["shouru", readIncome()], ["zhichu", readExpense()]] as const) if (name.trim()) edited.fenlei.push({ shouzhi: kind, fenlei: name.trim(), qiyong: true });
         button.setDisabled(true);
+        status.textContent = "正在保存…";
         void lifeOS.saveSettings({ genmulu: edited.genmulu, mulu: edited.mulu, qiyongmokuai: edited.qiyongmokuai, shiqu: edited.shiqu, fujianzuidadaxiao: edited.fujianzuidadaxiao, fenlei: edited.fenlei })
-          .then(() => renderLifeOSSettings(containerEl, lifeOS, footer))
-          .catch((error: unknown) => { new Notice(`设置未确认保存：${error instanceof Error ? error.message : String(error)}`, 12000); button.setDisabled(false); });
+          .then(() => {
+            renderLifeOSSettings(containerEl, lifeOS, footer);
+            const savedStatus = (footer ?? containerEl).querySelector('[role="status"]');
+            if (savedStatus) savedStatus.textContent = "已保存。收支分类已生效，重新打开记账即可选择。";
+          })
+          .catch((error: unknown) => { status.textContent = `保存失败：${error instanceof Error ? error.message : String(error)}`; new Notice(status.textContent, 12000); button.setDisabled(false); });
       }));
 
 }

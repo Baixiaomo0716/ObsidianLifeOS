@@ -24,14 +24,46 @@ export class TemplateService {
   private checkType(type: NoteType): void {
     if (!hasOwn(noteLabels, type) || !this.enabled.includes(type)) throw new StoreError("validation", "此笔记类型未启用或不支持，记账使用专用表单");
   }
+  private baselinePath(type: NoteType): string { return `${this.layout.root}/00_系统/模板版本/${noteLabels[type]}.md`; }
+  private async readOptional(path: string): Promise<string | undefined> {
+    try { return await this.files.read(path); }
+    catch (error) { if (!(error instanceof StoreError) || error.code !== "not_found") throw error; return undefined; }
+  }
+  private normalized(text: string): string { return text.replace(/\r\n/g, "\n").trimEnd(); }
+  private async saveBaseline(type: NoteType, template: string): Promise<void> {
+    const path = this.baselinePath(type), before = await this.readOptional(path);
+    if (before === template) return;
+    if (before === undefined) {
+      try { await this.files.create(path, template); return; }
+      catch (error) { if (!(error instanceof StoreError) || error.code !== "already_exists") throw error; }
+    }
+    await this.files.process(path, () => template);
+  }
+  /** Refresh only recognized stock templates; edited templates remain authoritative. */
+  private async refresh(type: NoteType, existing: string): Promise<string> {
+    const latest = bundledTemplates[type], baseline = await this.readOptional(this.baselinePath(type));
+    const same = (a: string, b: string) => this.normalized(a) === this.normalized(b);
+    // Legacy stock templates contained only properties and system comments.
+    const bodyStart = latest.indexOf("\n## ");
+    const oldBlank = bodyStart >= 0 && same(existing, latest.slice(0, bodyStart));
+    if (!same(existing, latest) && !(baseline !== undefined && same(existing, baseline)) && !oldBlank) return existing;
+    if (!same(existing, latest)) {
+      await this.files.process(this.templatePath(type), current => {
+        if (current !== existing) throw new StoreError("conflict", "模板已变化，请重新新建笔记");
+        return latest;
+      });
+    }
+    await this.saveBaseline(type, latest);
+    return latest;
+  }
   async install(): Promise<{ lujing: string; jieguo: string }[]> {
     const results: { lujing: string; jieguo: string }[] = [];
     for (const type of Object.keys(noteLabels) as NoteType[]) {
       const path = this.templatePath(type);
       try {
-        try { await this.files.read(path); results.push({ lujing: path, jieguo: "已存在，保留" }); continue; }
+        try { const existing = await this.files.read(path); const current = await this.refresh(type, existing); results.push({ lujing: path, jieguo: current === existing ? "已存在，保留" : "已更新" }); continue; }
         catch (error) { if (!(error instanceof StoreError) || error.code !== "not_found") throw error; }
-        await this.files.create(path, bundledTemplates[type]); results.push({ lujing: path, jieguo: "已安装" });
+        await this.files.create(path, bundledTemplates[type]); await this.saveBaseline(type, bundledTemplates[type]); results.push({ lujing: path, jieguo: "已安装" });
       } catch (error) { results.push({ lujing: path, jieguo: `未确认安装：${error instanceof Error ? error.message : String(error)}` }); }
     }
     return results;
@@ -41,9 +73,10 @@ export class TemplateService {
     const now = this.clock.now(), name = title.trim(), day = date ?? jinri(now, this.zone);
     if (type === "riji" && !isRiqi(day)) throw new StoreError("validation", "日记日期无效");
     if (type !== "riji" && (!name || name === "{{title}}" || Array.from(name).length > 120)) throw new StoreError("validation", "名称需要1至120个字符");
-    let template: string;
+    let template: string, installed = true;
     try { template = await this.files.read(this.templatePath(type)); }
-    catch (error) { if (!(error instanceof StoreError) || error.code !== "not_found") throw error; template = bundledTemplates[type]; }
+    catch (error) { if (!(error instanceof StoreError) || error.code !== "not_found") throw error; installed = false; template = bundledTemplates[type]; }
+    if (installed) template = await this.refresh(type, template);
     const decoded = new MarkdownCodec().decode(template);
     if (decoded.attributes.shiti !== type || decoded.attributes.jiegoubanben !== 2) throw new StoreError("unsupported_version", "模板类型或结构版本不匹配");
     const display = type === "riji" ? day : name;
@@ -70,7 +103,9 @@ export class TemplateService {
     const validation = validateRecord(record);
     if (!validation.ok) throw new StoreError("validation", "模板生成记录校验失败，请检查模板", undefined, validation);
     const base = Array.from(display.replace(/[\\/<>:"|?*\u0000-\u001f]/g, "_")).slice(0, ["daiban", "xiangmu"].includes(type) ? 120 : 48).join("").replace(/[. ]+$/g, "_") || noteLabels[type];
-    const path = safePath(type === "riji" ? `${this.layout.module(type)}/${day.slice(0, 7)}/${day}.md` : `${this.layout.module(type)}/${base}.md`);
+    const path = safePath(type === "riji" ? `${this.layout.module(type)}/${day.slice(0, 7)}/${day}.md`
+      : type === "xiangmu" ? `${this.layout.module(type)}/${base}/${base}.md`
+      : `${this.layout.module(type)}/${base}.md`);
     return { shiti: type, lujing: path, qingqiu: { caozuobiaoshi: this.ids.next(), buzhou: [{ caozuoleixing: "chuangjian", lujing: path, jilu: record as Jilu, zhengwen: replace(decoded.body) }] } };
   }
   execute(draft: NoteDraft): Promise<string> {

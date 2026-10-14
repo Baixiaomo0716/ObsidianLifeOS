@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createHash } from "node:crypto";
 import * as esbuild from "esbuild";
-const b = await esbuild.build({ stdin: { contents: 'export * from "./src/services/summary-service"; export * from "./src/services/task-list-service"; export * from "./src/services/task-service"; export * from "./src/services/journal-relation-service"; export * from "./src/services/journal-context-service"; export * from "./src/services/template-service"; export * from "./src/services/search-service"; export * from "./src/services/relation-service"; export * from "./src/services/index"; export * from "./src/storage/index"; export * from "./src/domain/index";', resolveDir: process.cwd() }, bundle: true, format: "esm", platform: "browser", loader: { ".md": "text" }, write: false });
+const b = await esbuild.build({ stdin: { contents: 'export * from "./src/services/inspiration-service"; export * from "./src/services/knowledge-service"; export * from "./src/services/summary-service"; export * from "./src/services/task-list-service"; export * from "./src/services/task-service"; export * from "./src/services/journal-relation-service"; export * from "./src/services/journal-context-service"; export * from "./src/services/template-service"; export * from "./src/services/search-service"; export * from "./src/services/relation-service"; export * from "./src/services/index"; export * from "./src/storage/index"; export * from "./src/domain/index";', resolveDir: process.cwd() }, bundle: true, format: "esm", platform: "browser", loader: { ".md": "text" }, write: false });
 const x = await import(`data:text/javascript;base64,${Buffer.from(b.outputFiles[0].text).toString("base64")}`);
 const id = (n) => `${String(n).padStart(8, "0")}-abcd-4abc-8abc-123456789abc`;
 const initial = "2026-10-09T00:00:00Z", now = "2026-10-10T00:00:00Z";
@@ -26,6 +26,25 @@ async function fixture(type = "riji", refs = []) {
 
 const all = ["riji", "jizhang", "yuedu", "yingshi", "youxi", "yanchu", "lvxing", "zhishi", "daiban", "xiangmu"];
 const summary = f => new x.SummaryService(f.index, { now: () => now }, "Asia/Shanghai", all);
+test("home body TODOs exclude checked tasks, code, comments and inactive notes and refresh after edits", async () => {
+  const f = await fixture("daiban");
+  const original = await f.notes.read(f.source.path);
+  await f.notes.update(original.version, { body: '- [ ] 整理资料\n  - [ ] 子步骤\n- [x] 已完成\n```markdown\n- [ ] 代码范例\n```\n<!--\n- [ ] 隐藏范例\n-->\n- [ ] \n' });
+  for (const [n, extra] of [[2, { jindu: "yiwancheng", wanchengshijian: now }], [3, { yiquxiao: true, quxiaoshijian: now }], [4, { yiguidang: true }], [5, { yihuishou: true, huishoushijian: now }]]) {
+    const note = await f.add(n, "daiban", extra);
+    await f.notes.update(note.version, { body: '- [ ] 不应展示\n' });
+  }
+  const journal = await f.add(6, "riji", { riqi: "2026-10-10" });
+  await f.notes.update(journal.version, { body: '- [ ] 日记清单\n' });
+  await f.index.rebuild();
+  assert.deepEqual(summary(f).read().bodyTodos.map(t => t.text), ["整理资料", "子步骤"]);
+  assert.equal(summary(f).read().bodyTodos[0].id, id(1));
+  assert.deepEqual(new x.SummaryService(f.index, { now: () => now }, "Asia/Shanghai", ["riji"]).read().bodyTodos, []);
+  const current = await f.notes.read(f.source.path);
+  await f.notes.update(current.version, { body: current.body.replace('- [ ] 整理资料', '- [x] 整理资料') });
+  await f.index.changed(f.source.path);
+  assert.deepEqual(summary(f).read().bodyTodos.map(t => t.text), ["子步骤"]);
+});
 test("ongoing includes all eight progress types, excludes pending/completed/cancelled/archive and honors enabled modules", async () => {
   const f = await fixture(); let n = 2;
   for (const type of all.filter(t => !["riji", "jizhang"].includes(t))) await f.add(n++, type, { [type === "yuedu" ? "zhuangtai" : "jindu"]: "jinxingzhong" });
@@ -83,4 +102,50 @@ test("weekly expense overflow is unknown even when today's expense is valid", as
   await f.add(3, "jizhang", { riqi: "2026-10-10", shouzhi: "zhichu", jine: 1 });
   await f.index.rebuild(); const result = summary(f).read();
   assert.equal(result.expense, 1); assert.equal(result.week.expense, undefined); assert.ok(result.week.moneyError);
+});
+test("lifetime counts full index, archived completions, distinct local days and streak through yesterday", async () => {
+  const f = await fixture();
+  await f.add(2, "riji", { riqi: "2026-10-08" });
+  await f.add(3, "xiangmu", { jindu: "yiwancheng", wanchengshijian: initial, yiguidang: true });
+  await f.add(4, "xiangmu", { jindu: "yiwancheng", wanchengshijian: initial, yiquxiao: true, quxiaoshijian: initial });
+  await f.add(5, "daiban", { jindu: "yiwancheng", wanchengshijian: initial, yiguidang: true });
+  await f.add(6, "yuedu", { zhuangtai: "yiwancheng", duwanshijian: initial, wanchengshijian: initial, yiguidang: true });
+  await f.add(7, "jizhang", { riqi: "2026-10-08", shouzhi: "zhichu" });
+  await f.add(8, "zhishi", { yihuishou: true, huishoushijian: initial });
+  for (let n = 20; n < 45; n++) await f.add(n, "zhishi", { chuangjianshijian: "2026-10-08T16:30:00Z" });
+  await f.index.rebuild();
+  const result = summary(f).read();
+  assert.equal(result.recent.length, 20);
+  assert.deepEqual(result.lifetime, { days: 2, notes: 31, projects: 1, tasks: 1, books: 1, knowledge: 25, streak: 2, newThisWeek: 31, firstDate: "2026-10-08" });
+  const disabled = new x.SummaryService(f.index, { now: () => now }, "Asia/Shanghai", []).read().lifetime;
+  assert.equal(disabled.days, 0); assert.equal(disabled.projects, undefined); assert.equal(disabled.firstDate, undefined);
+});
+test("inspiration persists Markdown, retries without duplicates, edits safely and excludes recycled notes", async () => {
+  const f = await fixture(); await f.index.rebuild();
+  const knowledge = new x.KnowledgeService(f.index, f.operations, { now: () => now }, f.ids, () => true);
+  const service = new x.InspirationService(f.index, f.templates, knowledge);
+  await assert.rejects(service.prepare("  "), /请填写/);
+  await assert.rejects(service.prepare("a".repeat(2001)), /2000/);
+  const draft = await service.prepare("第一条灵感\n第二行");
+  await service.execute(draft); await service.execute(draft);
+  assert.equal(service.list().length, 1);
+  const source = service.list()[0];
+  assert.equal(source.body, "第一条灵感\n第二行\n"); assert.equal(source.attributes.neirong, "第一条灵感\n第二行");
+  assert.ok(source.attributes.biaoqian.includes("灵感便签"));
+  const edit = await service.prepare("修改后的灵感", source); await service.execute(edit);
+  assert.equal(service.list()[0].attributes.neirong, "修改后的灵感");
+  await assert.rejects(service.prepare("不覆盖", source), /已变化/);
+  const current = service.list()[0]; await f.notes.update(current.version, { set: { yihuishou: true, huishoushijian: now } }); await f.index.changed(current.path);
+  assert.equal(service.list().length, 0);
+});
+test("deadline scope and linked project progress use real records", async () => {
+  const f = await fixture();
+  await f.add(2, "daiban", { jindu: "yiwancheng", wanchengshijian: now });
+  await f.add(3, "daiban", { jiezhiriqi: "2026-10-11" });
+  await f.add(4, "xiangmu", { jindu: "jinxingzhong", daiban: [id(2), id(3)], jiezhiriqi: "2026-10-09" });
+  await f.add(5, "daiban", { jiezhiriqi: "2026-10-18" });
+  await f.add(6, "daiban", { jiezhiriqi: "2026-10-11", yiquxiao: true, quxiaoshijian: now });
+  await f.index.rebuild(); const result = summary(f).read();
+  assert.deepEqual(result.deadlines.map(s => s.id), [id(4), id(3)]);
+  assert.equal(result.ongoing.find(s => s.id === id(4)).percent, 50);
 });

@@ -19,7 +19,15 @@ export function openAttachmentImportModal(app: App, projectId: string, index: En
     const work = queue.then(async () => {
       if (!active() || closed) { item.message.textContent = "尚未开始，可重新打开后导入"; return; }
       item.message.textContent = "正在复制并核对…";
-      if (!item.draft) item.draft = await store.prepare(item.file, projectId);
+      if (!item.draft) {
+        await index.rebuild();
+        const project = index.find(projectId);
+        if (!project) throw new Error("项目不存在、已回收或存在争议");
+        const parent = project.path.slice(0, project.path.lastIndexOf("/"));
+        const folder = parent.endsWith("/" + project.path.split("/").pop()!.replace(/\.md$/i, ""))
+          ? parent : `${parent}/${project.path.split("/").pop()!.replace(/\.md$/i, "")}`;
+        item.draft = await store.prepare(item.file, projectId, undefined, folder);
+      }
       if (!item.imported) { await store.execute(item.draft); item.imported = true; }
       if (!item.reference) {
         await index.rebuild(); const project = index.find(projectId);

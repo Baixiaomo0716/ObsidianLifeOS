@@ -34,6 +34,8 @@ async function environment({ delayCreate = false, failCreate = false, failRender
       for (const child of children) this.appendChild(child);
     }
     appendChild(child) { this.children.push(child); child.parent = this; return child; }
+    setAttribute(name, value) { this[name] = value; }
+    querySelector() { return this.children.find((child) => child.role === "status") ?? null; }
     remove() {
       if (this.parent) this.parent.children = this.parent.children.filter((child) => child !== this);
       this.parent = null;
@@ -96,15 +98,20 @@ async function environment({ delayCreate = false, failCreate = false, failRender
     constructor(element) { this.element = element; settings.push(this); }
     setName(value) { this.name = value; return this; }
     setDesc(value) { this.description = value; return this; }
-    addText(callback) { const text = { setValue: () => text, onChange: () => text }; callback(text); return this; }
+    addText(callback) { const text = { value: "", getValue: () => text.value, setValue: (value) => { text.value = value; return text; }, onChange: () => text }; this.text = text; callback(text); return this; }
     addToggle(callback) { const toggle = { setValue: () => toggle, onChange: () => toggle }; callback(toggle); return this; }
     addButton(callback) {
-      const button = { setButtonText: () => button, onClick: (handler) => { this.click = handler; return button; } };
+      const button = { setDisabled: () => button, setButtonText: () => button, onClick: (handler) => { this.click = handler; return button; } };
       callback(button); return this;
     }
   }
   class TFile { constructor(path) { this.path = path; } }
-  const obsidian = { Plugin, ItemView, PluginSettingTab, Setting, TFile, Notice: class { constructor(message) { notices.push(message); } } };
+  class Modal {
+    constructor() { this.contentEl = document.createElement("div"); this.modalEl = document.createElement("div"); }
+    open() {}
+    close() { this.onClose?.(); }
+  }
+  const obsidian = { Plugin, ItemView, PluginSettingTab, Setting, TFile, Modal, Notice: class { constructor(message) { notices.push(message); } } };
   const module = { exports: {} };
   vm.runInNewContext(compiled.outputFiles[0].text, {
     module, exports: module.exports,
@@ -125,7 +132,7 @@ async function environment({ delayCreate = false, failCreate = false, failRender
   });
   const plugin = new module.exports.default();
   await plugin.onload();
-  return { plugin, workspace, roots, notices, settings, resumeCreate, hostSibling, events, registered, TFile, app };
+  return { plugin, workspace, roots, notices, settings, resumeCreate, hostSibling, events, registered, TFile, app, setSettingsRaw(value) { settingsRaw = value; } };
 }
 
 const configuredSettings = JSON.stringify({ jiegoubanben: 2, genmulu: "生活档案", mulu: { riji: "10_日记", jizhang: "20_记账", yuedu: "30_阅读", yingshi: "40_影视", youxi: "45_游戏", yanchu: "50_演出", lvxing: "60_旅行", zhishi: "80_知识", daiban: "81_待办", xiangmu: "82_项目" }, qiyongmokuai: ["riji"], shiqu: "UTC", fujianzuidadaxiao: 1024, fenlei: [] });
@@ -133,6 +140,18 @@ test("plugin reload binds stores to persisted layout and settings", async () => 
   const e = await environment({ settingsRaw: configuredSettings });
   assert.equal(e.plugin.stores.layout.root, "生活档案"); assert.equal(e.plugin.activeSettings.shiqu, "UTC");
   assert.equal(e.plugin.activeSettings.qiyongmokuai.length, 1);
+});
+test("opening a new ledger reloads categories saved after the workspace opened", async () => {
+  const e = await environment();
+  const updated = JSON.parse(configuredSettings);
+  updated.qiyongmokuai.push("jizhang");
+  updated.fenlei = [{ shouzhi: "zhichu", fenlei: "日用品", qiyong: true }];
+  e.setSettingsRaw(JSON.stringify(updated));
+  e.plugin.commands.find((command) => command.id === "create-ledger").callback();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(Array.from(e.plugin.settingsSnapshot.shuju.fenlei, (item) => item.fenlei), ["日用品"]);
+  assert.ok(e.roots.some((root) => root.node?.type?.name === "LedgerForm"));
+  e.plugin.onunload();
 });
 test("invalid persisted configuration does not start business services or fallback index", async () => {
   const e = await environment({ settingsRaw: "bad" });
@@ -179,7 +198,9 @@ test("command, ribbon and settings entry open one reusable view", async () => {
   assert.ok(e.roots[0].node.props.home, "Real summary port is connected");
   assert.ok(markup.includes('aria-labelledby="lifeos-title-'));
   assert.ok(markup.includes('aria-label="LifeOS页面"'));
-  assert.equal((markup.match(/disabled=""/g) ?? []).length, 0, "All quick entry actions are now connected");
+  const shortcuts = markup.match(/class="lifeos-shortcuts"[\s\S]*?<\/div>/)?.[0];
+  assert.ok(shortcuts, "Quick entry actions are rendered");
+  assert.equal((shortcuts.match(/disabled=""/g) ?? []).length, 0, "All quick entry actions are now connected");
   e.plugin.settingTab.hide();
   assert.equal(e.plugin.settingTab.containerEl.children.length, 0);
   e.plugin.onunload();

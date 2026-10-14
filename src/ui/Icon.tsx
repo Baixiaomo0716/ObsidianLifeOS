@@ -1,5 +1,10 @@
 export function Icon({ name }: { name: string }) {
   const paths: Record<string, string> = {
+    link: "m10 13 4-4 M8 15l-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0 M16 9l2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0",
+    search: "M16 16l5 5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
+    calendar: "M3 5h18v16H3Z M3 10h18 M7 3v4 M17 3v4 M7 14h1 M12 14h1 M17 14h1 M7 18h1 M12 18h1",
+    flag: "M5 22V3 M5 4c4-4 9 4 15 0v10c-6 4-11-4-15 0",
+    wallet: "M3 7l13-4v4 M3 7h18v14H3Z M21 11h-6v6h6 M17 14h1",
     home: "M3 10 12 3l9 7v11h-6v-7H9v7H3Z",
     record: "M5 3h14v18H5Z M8 7h8 M8 11h8 M8 15h5",
     review: "M12 8v5l4 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",

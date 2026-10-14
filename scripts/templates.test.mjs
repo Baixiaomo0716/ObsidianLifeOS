@@ -29,10 +29,22 @@ test("diary month folders and readable task/project names contain no UUID suffix
   assert.equal((await s.templates.prepare("riji", "")).lujing, "LifeOS/10_日记/2026-10/2026-10-10.md");
   for (const [type, folder] of [["daiban", "81_待办"], ["xiangmu", "82_项目"]]) {
     const first = await s.templates.prepare(type, "长名称测试"), path = await s.templates.execute(first), original = s.fs.files.get(path);
-    assert.equal(path, `LifeOS/${folder}/长名称测试.md`);
+    assert.equal(path, type === "xiangmu" ? "LifeOS/82_项目/长名称测试/长名称测试.md" : `LifeOS/${folder}/长名称测试.md`);
     await expectCode(s.templates.execute(await s.templates.prepare(type, "长名称测试")), "conflict");
     assert.equal(s.fs.files.get(path), original);
   }
+});
+test("project folder keeps ordinary related documents out of the project index", async () => {
+  const s = setup(), projectPath = await s.templates.execute(await s.templates.prepare("xiangmu", "新项目"));
+  const documentPath = "LifeOS/82_项目/新项目/需求说明.md";
+  s.fs.files.set(documentPath, "# 需求说明\n");
+  assert.equal(projectPath, "LifeOS/82_项目/新项目/新项目.md");
+  assert.equal(s.layout.isManaged(projectPath), true);
+  assert.equal(s.layout.isManaged(documentPath), false);
+  await s.index.rebuild();
+  assert.equal(s.index.all().filter((row) => row.attributes.shiti === "xiangmu").length, 1);
+  assert.equal(s.index.issues().some((issue) => issue.path === documentPath), false);
+  assert.equal(s.layout.isManaged("LifeOS/82_项目/旧项目.md"), true);
 });
 test("simplified properties hide system and removed fields while preserving index identity/body", async () => {
   const s = setup();
@@ -83,7 +95,7 @@ test("all nine bundled templates create every visible field with unique identity
     assert.equal(snapshot.validation.ok, true, type); ids.push(snapshot.attributes.biaoshi);
     const source = new x.MarkdownCodec().decode(x.bundledTemplates[type]);
     for (const key of Object.keys(source.attributes)) assert.ok(Object.hasOwn(snapshot.attributes, key), `${type}.${key}`);
-    assert.equal(snapshot.body, source.body); assert.equal(snapshot.attributes.chuangjianshijian, now);
+    assert.equal(snapshot.body, source.body.replaceAll("{{date:YYYY-MM-DD}}", s.templates.today())); assert.equal(snapshot.attributes.chuangjianshijian, now);
   }
   assert.equal(new Set(ids).size, 9); assert.equal(s.index.all().length, 9);
 });
@@ -117,7 +129,39 @@ test("template install is explicit, nine only, preserves user overrides and repo
   s.fs.fault = { kind: "create", path: s.templates.templatePath("riji") };
   const results = await s.templates.install(); assert.equal(results.length, 9); assert.equal(s.fs.files.get(path), "我的模板");
   assert.ok(results.some((item) => item.jieguo.includes("未确认")));
-  assert.ok(results.some((item) => item.jieguo.includes("保留"))); const before = [...s.fs.files]; await s.templates.install(); assert.deepEqual([...s.fs.files], before);
+  assert.ok(results.some((item) => item.jieguo.includes("保留"))); await s.templates.install(); const before = [...s.fs.files]; await s.templates.install(); assert.deepEqual([...s.fs.files], before);
+});
+test("every TODO example receives a concrete per-item deadline when creating a note", async () => {
+  const s = setup(), path = await s.templates.execute(await s.templates.prepare("daiban", "带截止时间的待办"));
+  const body = (await s.notes.read(path)).body;
+  const tasks = body.split("\n").filter(line => /^- \[[ x]\]/.test(line));
+  assert.equal(tasks.length, 5);
+  for (const task of tasks) assert.ok(task.endsWith("（截止：2026-10-10 23:59）"));
+  assert.ok(!body.includes("{{date"));
+});
+test("new notes automatically upgrade all nine legacy stock templates", async () => {
+  const s = setup();
+  for (const type of Object.keys(x.noteLabels)) {
+    const latest = x.bundledTemplates[type], path = s.templates.templatePath(type);
+    s.fs.files.set(path, latest.slice(0, latest.indexOf("\n## ")).replaceAll("\n", "\r\n"));
+    const note = await s.templates.execute(await s.templates.prepare(type, "自动带入"));
+    assert.equal((await s.notes.read(note)).body, new x.MarkdownCodec().decode(latest).body.replaceAll("{{date:YYYY-MM-DD}}", s.templates.today()));
+    assert.equal(s.fs.files.get(path), latest);
+  }
+});
+test("tracked stock templates upgrade on new note creation while custom edits stay intact", async () => {
+  const s = setup(), path = s.templates.templatePath("daiban"), baseline = `${s.layout.root}/00_系统/模板版本/待办.md`;
+  await s.templates.install();
+  const older = x.bundledTemplates.daiban.replace("整理所需资料与相关笔记", "旧版步骤");
+  s.fs.files.set(path, older); s.fs.files.set(baseline, older);
+  const created = await s.templates.execute(await s.templates.prepare("daiban", "新版待办"));
+  assert.ok((await s.notes.read(created)).body.includes("整理所需资料与相关笔记"));
+  const custom = x.bundledTemplates.daiban + "\n- [ ] 我的自定义步骤\n";
+  s.fs.files.set(path, custom);
+  const customNote = await s.templates.execute(await s.templates.prepare("daiban", "自定义待办"));
+  assert.equal(s.fs.files.get(path), custom);
+  assert.ok((await s.notes.read(customNote)).body.includes("我的自定义步骤"));
+  assert.equal((await s.notes.read(created)).body.includes("我的自定义步骤"), false);
 });
 test("custom template retains unknown nested attributes/body and typed variable substitution", async () => {
   const s = setup(), codec = new x.MarkdownCodec(), decoded = codec.decode(x.bundledTemplates.zhishi);
