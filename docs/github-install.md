@@ -23,16 +23,16 @@ LifeOS 的源码仓库根目录保留 `manifest.json`、`versions.json`、`READM
 
 1. 把项目上传到自己的 GitHub 仓库，并启用 GitHub Actions。保留现有 Gitee 远程，需要时另外添加 GitHub 远程。
 2. 保持 `package.json` 和 `manifest.json` 中的版本一致，在 `versions.json` 增加该版本与最低 Obsidian 版本的映射。
-3. 提交变更，把版本标签推送到 GitHub。首次标签为 `0.1.0`，**不加 `v` 前缀**；后续每个新版本使用新标签，不复用已发布的标签。
+3. 提交变更，把版本标签推送到 GitHub。首次标签为 `0.1.1`，**不加 `v` 前缀**；后续每个新版本使用新标签，不复用已发布的标签。
 4. `.github/workflows/release.yml` 自动安装依赖、执行 `pnpm check`、核对版本及标签、生成三份插件文件、安装 ZIP 和 SHA-256 摘要，再创建预发布 Release。
 5. Actions 全部成功且 Release 附件齐全后，用户才可以通过 BRAT 安装。
 
-已有标签需要重新运行时，可在 GitHub Actions → Release Obsidian plugin → Run workflow 中填写该标签（例如 `0.1.0`）。工作流按该标签检出并校验源码，无需删除或移动标签。发布成功后不要重复创建同一版本。
+已有标签需要重新运行时，可在 GitHub Actions → Release Obsidian plugin → Run workflow 中填写该标签（例如 `0.1.1`）。工作流按该标签检出并校验源码，无需删除或移动标签。发布成功后不要重复创建同一版本。
 
 发布附件：
 
 ```text
-GitHub Release: 0.1.0
+GitHub Release: 0.1.1
 ├── main.js
 ├── manifest.json
 ├── styles.css
