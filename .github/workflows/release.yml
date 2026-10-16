@@ -1,0 +1,52 @@
+name: Release Obsidian plugin
+
+on:
+  push:
+    tags:
+      - '[0-9]*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build and check
+        run: pnpm check
+      - name: Prepare release assets
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/prepare-github-release.mjs
+      - name: Create installable ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path releases/github/life-os -DestinationPath releases/github/life-os.zip
+      - name: Publish development preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: pwsh
+        run: |
+          gh release create "$env:RELEASE_TAG" `
+            releases/github/life-os/main.js `
+            releases/github/life-os/manifest.json `
+            releases/github/life-os/styles.css `
+            releases/github/life-os.zip `
+            releases/github/SHA256SUMS.txt `
+            --verify-tag --title "$env:RELEASE_TAG" --prerelease --generate-notes

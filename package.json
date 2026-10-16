@@ -12,6 +12,7 @@
     "dev": "node esbuild.config.mjs --watch",
     "dev:vault": "node esbuild.config.mjs --watch --vault",
     "package:preview": "pnpm check && pwsh -NoProfile -File scripts/package-preview.ps1",
+    "release:prepare": "node scripts/prepare-github-release.mjs",
     "install:vault": "pnpm build && node esbuild.config.mjs --vault",
     "typecheck": "tsc --noEmit",
     "build": "pnpm typecheck && node esbuild.config.mjs",

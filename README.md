@@ -15,6 +15,8 @@
 
 ## 安装与体验
 
+GitHub 仓库：[Baixiaomo0716/ObsidianLifeOS](https://github.com/Baixiaomo0716/ObsidianLifeOS)。版本发布后，可通过 **BRAT** 添加此仓库地址来安装和更新，或从 [Releases](https://github.com/Baixiaomo0716/ObsidianLifeOS/releases) 下载 `life-os.zip` 手动安装。目前未进入 Obsidian 社区插件目录。发布和安装步骤见 [GitHub 发布与安装](docs/github-install.md)。
+
 交付包解压后，把life-os文件夹放到目标Vault的.obsidian/plugins/下，启用第三方插件中的LifeOS，Ctrl+R重载后打开LifeOS。只安装main.js、manifest.json、styles.css；首次建议在专用测试Vault体验。详细步骤见[安装与使用](docs/install-and-use.md)。
 
 开发测试库位于本工程dev-vault，已忽略且不上传个人数据。Obsidian“打开文件夹作为仓库”选择该目录；源码仍在本工程。每次构建自动复制不会替换已经加载的代码，需要Ctrl+R重载。最低宿主声明1.13.4，Windows Obsidian1.14.4基础加载和重开有用户确认；isDesktopOnly=false是兼容目标，不代表手机已验收。
