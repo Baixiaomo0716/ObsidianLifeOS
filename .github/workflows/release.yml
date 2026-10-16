@@ -1,6 +1,12 @@
 name: Release Obsidian plugin
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Existing version tag to publish (for example 0.1.0)'
+        required: true
+        default: '0.1.0'
   push:
     tags:
       - '[0-9]*'
@@ -9,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.version || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -19,6 +25,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || github.ref }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -30,7 +38,7 @@ jobs:
         run: pnpm check
       - name: Prepare release assets
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.version || github.ref_name }}
         run: node scripts/prepare-github-release.mjs
       - name: Create installable ZIP
         shell: pwsh
@@ -40,7 +48,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.version || github.ref_name }}
         shell: pwsh
         run: |
           gh release create "$env:RELEASE_TAG" `

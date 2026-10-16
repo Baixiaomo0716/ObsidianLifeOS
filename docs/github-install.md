@@ -27,6 +27,8 @@ LifeOS 的源码仓库根目录保留 `manifest.json`、`versions.json`、`READM
 4. `.github/workflows/release.yml` 自动安装依赖、执行 `pnpm check`、核对版本及标签、生成三份插件文件、安装 ZIP 和 SHA-256 摘要，再创建预发布 Release。
 5. Actions 全部成功且 Release 附件齐全后，用户才可以通过 BRAT 安装。
 
+已有标签需要重新运行时，可在 GitHub Actions → Release Obsidian plugin → Run workflow 中填写该标签（例如 `0.1.0`）。工作流按该标签检出并校验源码，无需删除或移动标签。发布成功后不要重复创建同一版本。
+
 发布附件：
 
 ```text
