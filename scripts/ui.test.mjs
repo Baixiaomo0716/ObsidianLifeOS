@@ -7,18 +7,39 @@ import { renderToStaticMarkup } from "react-dom/server";
 import * as esbuild from "esbuild";
 const require = createRequire(import.meta.url);
 const built = await esbuild.build({ entryPoints: ["src/ui/App.tsx"], bundle: true, format: "cjs", platform: "browser", write: false, external: ["react", "react/jsx-runtime"], logLevel: "silent" });
-function harness(props = {}) {
+function harness(props = {}, paneWidth) {
   const state = []; let cursor = 0, nextId = 0;
-  const fakeReact = { ...React, useState(initial) { const index = cursor++; if (state[index] === undefined) state[index] = initial; return [state[index], (value) => { state[index] = value; }]; }, useId() { return `test-${nextId++}`; }, useRef() { return { current: null }; }, useEffect() {} };
-  const module = { exports: {} }; vm.runInNewContext(built.outputFiles[0].text, { module, exports: module.exports, require(name) { return name === "react" ? fakeReact : require(name); } });
-  const render = () => { cursor = 0; return module.exports.App(props); };
+  let observer, resizeListener, cleanup; const effects = [];
+  const pane = { getBoundingClientRect: () => ({ width: paneWidth }), ownerDocument: { defaultView: { addEventListener(_, fn) { resizeListener = fn; }, removeEventListener() { resizeListener = null; } } } };
+  const fakeReact = { ...React, useState(initial) { const index = cursor++; if (state[index] === undefined) state[index] = initial; return [state[index], (value) => { state[index] = value; }]; }, useId() { return `test-${nextId++}`; }, useRef() { return { current: paneWidth === undefined ? null : pane }; }, useEffect(fn) { effects.push(fn); } };
+  const module = { exports: {} }; vm.runInNewContext(built.outputFiles[0].text, { module, exports: module.exports, ResizeObserver: class { constructor(fn) { observer = fn; } observe() {} disconnect() { observer = null; } }, require(name) { return name === "react" ? fakeReact : require(name); } });
+  const render = () => { cursor = 0; effects.length = 0; return module.exports.App(props); };
   const walk = (node) => { if (!node || typeof node !== "object") return []; return [node, ...React.Children.toArray(node.props?.children).flatMap(walk)]; };
   const click = (name) => {
     const button = walk(render()).find((node) => node.type === "button" && React.Children.toArray(node.props.children).some((child) => child?.props?.children === name));
     assert.ok(button, `Missing navigation ${name}`); button.props.onClick();
   };
-  return { render, click, walk, html: () => renderToStaticMarkup(render()) };
+  return { render, click, walk, html: () => renderToStaticMarkup(render()), mount() { render(); cleanup = effects[0](); }, resize(width) { paneWidth = width; observer?.(); }, unmount() { cleanup?.(); }, observers: () => ({ observer, resizeListener }) };
 }
+
+test("mobile home moves a single working quick record before all six totals; expanding restores desktop order", () => {
+  const called = [], h = harness({ onCreateNote: type => called.push(type), onCreateLedger: () => called.push("jizhang") }, 390);
+  h.mount();
+  const mobile = h.html();
+  assert.ok(mobile.indexOf("快速记录") < mobile.indexOf("生活累计"));
+  assert.ok(mobile.indexOf("生活累计") < mobile.indexOf("专注当下"));
+  assert.equal((mobile.match(/lifeos-quick-record/g) ?? []).length, 1);
+  for (const text of ["已记录", "创建笔记", "完成项目", "完成待办", "读完书籍", "知识积累", "进行中事项", "最近记录", "灵感便签"]) assert.ok(mobile.includes(text));
+  for (const type of ["riji", "jizhang", "daiban"]) h.walk(h.render()).find(n => n.type === "button" && n.props["data-type"] === type).props.onClick();
+  assert.deepEqual(called, ["riji", "jizhang", "daiban"]);
+  h.resize(0); assert.ok(h.html().indexOf("快速记录") < h.html().indexOf("生活累计"));
+  h.resize(1024); const desktop = h.html();
+  assert.ok(desktop.indexOf("生活累计") < desktop.indexOf("快速记录"));
+  assert.ok(desktop.indexOf("专注当下") < desktop.indexOf("快速记录"));
+  assert.equal((desktop.match(/lifeos-quick-record/g) ?? []).length, 1);
+  h.resize(680); assert.ok(h.html().indexOf("快速记录") < h.html().indexOf("生活累计"));
+  h.unmount(); assert.equal(h.observers().observer, null); assert.equal(h.observers().resizeListener, null);
+});
 test("four navigation actions select actual panels and active page indicator", () => {
   const h = harness(); assert.ok(h.html().includes("进行中事项"));
   for (const [name, text] of [["记录", "选择记录类型"], ["回看", "全部记录"], ["设置", "使用偏好"], ["首页", "进行中事项"]]) {

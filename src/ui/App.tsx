@@ -10,6 +10,7 @@ import { GamePage, type GamePort } from "./GamePage";
 import { FilmPage, type FilmPort } from "./FilmPage";
 import { ReadingPage, type ReadingPort } from "./ReadingPage";
 import { HomeLifetime } from "./HomeLifetime";
+import { useNarrowLayout } from "./use-narrow-layout";
 import { HomePage, type HomePort } from "./HomePage";
 import { ProjectPage, type ProjectPort } from "./ProjectPage";
 import { LedgerPage, type LedgerPort } from "./LedgerPage";
@@ -34,9 +35,9 @@ const modules: { id: Shiti; name: string; hint: string }[] = [
   { id: "youxi", name: "游戏", hint: "想玩、在玩与完成的游戏" }, { id: "yanchu", name: "演出", hint: "现场、乐队与回忆" },
   { id: "lvxing", name: "旅行", hint: "行程与旅途中的发现" }, { id: "zhishi", name: "知识", hint: "积累想法与可复用的知识" },
 ];
-function Card({ title, children }: { title: string; children: ReactNode }) {
+function Card({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {
   const id = useId();
-  return <section className="lifeos-card" aria-labelledby={id}><header className="lifeos-card-header"><h2 id={id}>{title}</h2>{title === "快速记录" && <span className="lifeos-card-caption">给今天留下一点痕迹</span>}</header><div className="lifeos-card-body" tabIndex={0} role="region" aria-label={`${title}内容`}>{children}</div></section>;
+  return <section className={`lifeos-card ${className}`.trim()} aria-labelledby={id}><header className="lifeos-card-header"><h2 id={id}>{title}</h2>{title === "快速记录" && <span className="lifeos-card-caption">给今天留下一点痕迹</span>}</header><div className="lifeos-card-body" tabIndex={0} role="region" aria-label={`${title}内容`}>{children}</div></section>;
 }
 function Empty({ title, children }: { title: string; children: ReactNode }) {
   return <div className="lifeos-empty"><strong>{title}</strong><p>{children}</p></div>;
@@ -52,6 +53,7 @@ function SettingsPanel({ render }: { render: AppProps["renderSettings"] }) {
   return <section className="lifeos-card lifeos-settings-card" aria-label="LifeOS配置"><header className="lifeos-card-header"><h2>使用偏好</h2><span>收支分类保存后立即生效</span></header><div className="lifeos-card-body" ref={body}>{!render && <Empty title="设置预览">配置可在 Obsidian 的 LifeOS 设置页修改。</Empty>}</div><div className="lifeos-card-footer" ref={footer} /></section>;
 }
 export function App({ inspiration, enabledModules = shiti, renderSettings, onCreateNote, periodReview, knowledge, travel, performances, game, film, reading, review, journal, tasks, onCreateLedger, ledger, projects, home }: AppProps = {}) {
+  const { ref: appRef, narrow } = useNarrowLayout();
   const [reviewMode, setReviewMode] = useState<"records" | "tags" | "period">("records"), [page, setPage] = useState<Page>("home"), [module, setModule] = useState<Shiti | "all">("all");
   const [, refreshHome] = useState(0);
   useEffect(() => {
@@ -63,11 +65,12 @@ export function App({ inspiration, enabledModules = shiti, renderSettings, onCre
   const id = useId(), titleId = `lifeos-title-${id}`, contentId = `lifeos-content-${id}`;
   const active = pages.find((item) => item.id === page)!;
   const visible = modules.filter((item) => enabledModules.includes(item.id));
-  return <main className={`lifeos-app lifeos-page-${page}`} aria-labelledby={titleId}>
+  const quickRecord = <Card title="快速记录" className="lifeos-quick-record"><div className="lifeos-shortcuts">{visible.filter((item) => ["riji", "jizhang", "daiban"].includes(item.id)).map((item) => <button type="button" disabled={item.id === "jizhang" ? !onCreateLedger : !onCreateNote} data-type={item.id} key={item.id} onClick={() => { if (item.id === "jizhang") onCreateLedger?.(); else onCreateNote?.(item.id); }}>{item.name}<Icon name={item.id === "riji" ? "yuedu" : item.id === "jizhang" ? "wallet" : item.id} /><strong>{{ riji: "写日记", jizhang: "记一笔", daiban: "添加待办" }[item.id as "riji" | "jizhang" | "daiban"]}</strong><small>{{ riji: "记录今天的生活和想法", jizhang: "记录收支管理生活", daiban: "记下要做的事让生活更有条理" }[item.id as "riji" | "jizhang" | "daiban"]}</small><span aria-hidden="true">→</span></button>)}</div></Card>;
+  return <main ref={appRef} className={`lifeos-app lifeos-page-${page}`} aria-labelledby={titleId}>
     <aside className="lifeos-sidebar"><div className="lifeos-brand"><strong>LifeOS</strong><small>生活，一点点记录</small></div><nav className="lifeos-navigation" aria-label="LifeOS页面">{pages.map((item) => <button type="button" key={item.id} aria-current={page === item.id ? "page" : undefined} aria-controls={contentId} onClick={() => setPage(item.id)}><Icon name={item.id} /><span>{item.name}</span></button>)}</nav><p className="lifeos-sidebar-note">留给自己的生活空间</p></aside>
     <div className="lifeos-workspace"><header className="lifeos-header" style={page === "home" ? { backgroundImage: `linear-gradient(90deg, #dfa05d 0%, #dfa05d 55%, transparent 83%), url("${homeBanner}")` } : undefined}><div><h1 id={titleId}>{active.name}</h1><p className="lifeos-eyebrow">{active.hint}</p></div></header>
       <div className="lifeos-page" id={contentId}>
-        {page === "home" && <><HomeLifetime summary={summary} connected={!!home} /><div className="lifeos-grid"><HomePage section="today" summary={summary} port={home} createJournal={onCreateNote && enabledModules.includes("riji") ? () => onCreateNote("riji") : undefined} /><Card title="快速记录"><div className="lifeos-shortcuts">{visible.filter((item) => ["riji", "jizhang", "daiban"].includes(item.id)).map((item) => <button type="button" disabled={item.id === "jizhang" ? !onCreateLedger : !onCreateNote} data-type={item.id} key={item.id} onClick={() => { if (item.id === "jizhang") onCreateLedger?.(); else onCreateNote?.(item.id); }}>{item.name}<Icon name={item.id === "riji" ? "yuedu" : item.id === "jizhang" ? "wallet" : item.id} /><strong>{{ riji: "写日记", jizhang: "记一笔", daiban: "添加待办" }[item.id as "riji" | "jizhang" | "daiban"]}</strong><small>{{ riji: "记录今天的生活和想法", jizhang: "记录收支管理生活", daiban: "记下要做的事让生活更有条理" }[item.id as "riji" | "jizhang" | "daiban"]}</small><span aria-hidden="true">→</span></button>)}</div></Card><HomePage section="ongoing" summary={summary} port={home} /><HomePage section="recent" summary={summary} port={home} showRecent={() => { setReviewMode("records"); setModule("all"); setPage("review"); }} /><InspirationCard port={inspiration} /></div></>}
+        {page === "home" && <>{narrow && quickRecord}<HomeLifetime summary={summary} connected={!!home} /><div className="lifeos-grid"><HomePage section="today" summary={summary} port={home} createJournal={onCreateNote && enabledModules.includes("riji") ? () => onCreateNote("riji") : undefined} />{!narrow && quickRecord}<HomePage section="ongoing" summary={summary} port={home} /><HomePage section="recent" summary={summary} port={home} showRecent={() => { setReviewMode("records"); setModule("all"); setPage("review"); }} /><InspirationCard port={inspiration} /></div></>}
         {page === "record" && <div className="lifeos-grid lifeos-record-grid"><Card title="选择记录类型"><div className="lifeos-module-list">{visible.map((item) => <div className="lifeos-module-row" data-type={item.id} key={item.id}><span className="lifeos-type-icon"><Icon name={item.id} /></span><div><strong>{item.name}</strong><p>{item.hint}</p></div><button type="button" disabled={item.id === "jizhang" ? !onCreateLedger : !onCreateNote} onClick={() => { if (item.id === "jizhang") onCreateLedger?.(); else onCreateNote?.(item.id); }}>{item.id === "jizhang" ? (onCreateLedger ? "新建记账" : "表单待接入") : "新建笔记"}</button></div>)}</div>{!visible.length && <Empty title="暂无启用模块">可在设置中启用记录类型。</Empty>}</Card><Card title="记录方式"><h3>笔记与账本</h3><div className="lifeos-record-method"><Icon name="riji" /><div><h3>笔记记录</h3><p>通过模板新建笔记，在编辑器中填写。</p></div></div><div className="lifeos-record-method"><Icon name="jizhang" /><div><h3>记账记录</h3><p>通过专用表单填写，单独保存账目。</p></div></div></Card></div>}
         {page === "review" && <div className="lifeos-review-layout"><div className="lifeos-filter-bar"><label htmlFor={`module-${id}`}>记录类型</label><select id={`module-${id}`} disabled={reviewMode === "period"} value={module} onChange={(event) => setModule(event.target.value as Shiti | "all")}><option value="all">全部类型</option>{visible.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><button type="button" aria-pressed={reviewMode === "records"} onClick={() => setReviewMode("records")}>记录浏览</button><button type="button" aria-pressed={reviewMode === "tags"} onClick={() => setReviewMode("tags")}>标签浏览</button><button type="button" aria-pressed={reviewMode === "period"} onClick={() => setReviewMode("period")}>月年度回顾</button></div><Card title={reviewMode === "period" ? "月年度回顾" : reviewMode === "tags" ? "标签浏览" : module === "all" ? "全部记录" : `${modules.find((item) => item.id === module)?.name ?? "记录"}记录`}>{reviewMode === "period" ? <PeriodReviewPage port={periodReview} /> : reviewMode === "tags" ? <TagPage key={module} port={review} type={module} allowed={enabledModules} /> : module === "riji" && journal ? <><JournalForm port={journal} /><h3>日记搜索与关联</h3><ReviewPage key={module} port={review} type={module} allowed={enabledModules} /></> : module === "zhishi" && knowledge ? <KnowledgePage port={knowledge} /> : module === "lvxing" && travel ? <TravelPage port={travel} /> : module === "yanchu" && performances ? <PerformancePage port={performances} /> : module === "youxi" && game ? <GamePage port={game} /> : module === "yingshi" && film ? <FilmPage port={film} /> : module === "yuedu" && reading ? <ReadingPage port={reading} /> : module === "xiangmu" && projects ? <ProjectPage port={projects} /> : module === "jizhang" && ledger ? <LedgerPage port={ledger} /> : module === "daiban" && tasks ? <TaskPage port={tasks} /> : <ReviewPage key={module} port={review} type={module} allowed={enabledModules} />}</Card></div>}
         {page === "settings" && <SettingsPanel render={renderSettings} />}
@@ -75,7 +78,3 @@ export function App({ inspiration, enabledModules = shiti, renderSettings, onCre
     </div>
   </main>;
 }
-
-
-
-
