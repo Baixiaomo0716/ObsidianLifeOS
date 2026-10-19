@@ -914,3 +914,61 @@
 }
 .modal.lifeos-modal { display:flex; flex-direction:column; } .lifeos-modal .modal-content { flex:1; min-height:0; } .theme-dark .lifeos-modal .lifeos-modal-type[data-type=riji],.theme-dark .lifeos-modal .lifeos-modal-type[data-type=xiangmu] { color:#191919; }
 .modal.lifeos-modal { max-width:min(100%,calc(100vw - 32px)); }
+
+/* Mobile workbench: the host owns viewport/keyboard height; only the page scrolls. */
+@container (max-width:680px) {
+  .lifeos-root .lifeos-app.lifeos-app { flex-direction:column-reverse; padding:6px; gap:6px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-sidebar { flex:none; border-right:0; padding-bottom:max(6px,env(safe-area-inset-bottom)); }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-brand,
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-sidebar-note,
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-workspace-footer { display:none; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-navigation { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-navigation button { width:100%; font-size:12px; min-height:48px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-workspace { flex:1; overflow:hidden; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-header { flex:0 0 auto; min-height:76px; padding:10px 14px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-header h1 { font-size:30px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-eyebrow { font-size:13px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-page { display:block; overflow:auto; padding:10px 2px 16px; scroll-padding-block:16px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-grid { display:flex; flex-direction:column; gap:12px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-card,
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-grid>.lifeos-card { height:auto; min-height:0; flex:none; margin-bottom:12px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-card-body { flex:none; overflow:visible; padding:12px; font-size:14px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-card-header { padding:12px; flex-wrap:wrap; gap:8px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-card-header h2 { font-size:21px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-lifetime { min-height:0; margin-bottom:12px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-lifetime-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-shortcuts { display:flex; flex-direction:column; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-shortcuts button { width:100%; min-height:80px; padding:12px; gap:6px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-module-row { flex-wrap:wrap; gap:8px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-module-row>div { min-width:0; overflow-wrap:anywhere; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-filter-bar { flex-wrap:wrap; gap:8px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-query-fields { flex-direction:column; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-query-fields label { flex-basis:auto; width:100%; }
+  .lifeos-root .lifeos-app.lifeos-app button { min-height:44px; height:auto; white-space:normal; }
+  .lifeos-root .lifeos-app.lifeos-app :is(input:not([type=checkbox]):not([type=radio]),select,textarea) { font-size:16px; min-height:44px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-relation-results { overflow:auto; max-width:100%; overscroll-behavior-x:contain; }
+  .lifeos-root .lifeos-app.lifeos-app table { min-width:560px; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-project-board,
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-tag-layout { grid-template-columns:minmax(0,1fr); }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-settings .setting-item { align-items:stretch; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-settings .setting-item-control { width:100%; justify-content:flex-start; }
+}
+@media (pointer:coarse) {
+  .lifeos-modal button { min-height:44px; }
+  .lifeos-modal :is(input:not([type=checkbox]):not([type=radio]),select,textarea) { font-size:16px; min-height:44px; }
+}
+@media (max-width:680px) {
+  .modal.lifeos-modal { width:calc(100% - 16px); max-width:calc(100% - 16px); max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding:16px 12px; }
+  .lifeos-modal .lifeos-template-actions,.lifeos-modal .lifeos-filter-bar { flex-wrap:wrap; }
+  .lifeos-modal .lifeos-ledger-details,.lifeos-modal .lifeos-modal-inline-field { grid-template-columns:minmax(0,1fr); }
+  .lifeos-modal .modal-content { scroll-padding-block:16px; }
+  .lifeos-root .lifeos-inspiration-dialog { max-width:calc(100vw - 24px); max-height:calc(100dvh - 32px); padding:16px; }
+}
+@container (max-width:680px) {
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-home-today .lifeos-card-header { display:flex; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-today-block { flex:none; overflow:visible; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-home-row { flex-wrap:wrap; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-home-row-content { flex-basis:60%; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-home-row-content>button { white-space:normal; overflow-wrap:anywhere; }
+  .lifeos-root .lifeos-app.lifeos-app .lifeos-template-actions { flex-wrap:wrap; }
+}
