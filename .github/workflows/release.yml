@@ -6,7 +6,7 @@ on:
       version:
         description: 'Existing version tag to publish (for example 0.1.0)'
         required: true
-        default: '0.1.1'
+        default: '0.1.2'
   push:
     tags:
       - '[0-9]*'

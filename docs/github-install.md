@@ -11,6 +11,8 @@ LifeOS 的源码仓库根目录保留 `manifest.json`、`versions.json`、`READM
 3. 选择对应版本或最新版本，添加插件，然后启用 **LifeOS**。
 4. 通过命令面板搜索 LifeOS 打开工作台。
 
+后续更新请在 BRAT 中跟踪最新版本（Latest），并执行检查更新；如果固定选择了某个版本标签，需先修改跟踪版本。仅推送源码不会产生可下载更新，必须等待新版本 Release 及安装附件发布完成。更新后在 Obsidian 中关闭再启用 LifeOS，或重启应用，以加载新代码。
+
 使用 BRAT 1.1.0 或以上。当前 Release 标记为开发预览；BRAT 可以安装预发布版本。最低 Obsidian 版本以该 Release 的 `manifest.json` 为准，当前为 1.13.4。
 
 目前还未提交 Obsidian 社区目录审核，因此不能通过搜索 LifeOS 直接安装。
@@ -32,7 +34,7 @@ LifeOS 的源码仓库根目录保留 `manifest.json`、`versions.json`、`READM
 发布附件：
 
 ```text
-GitHub Release: 0.1.1
+GitHub Release: 0.1.2
 ├── main.js
 ├── manifest.json
 ├── styles.css
